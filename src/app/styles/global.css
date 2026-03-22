@@ -1292,6 +1292,66 @@ textarea {
   letter-spacing: 0.08em;
 }
 
+.results-table-head--summary {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.results-print-action {
+  border: 1px solid #ccd4dd;
+  background: #ffffff;
+  color: #2b3640;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.results-print-action:hover {
+  background: #f5f7fa;
+}
+
+.summary-hero {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.summary-metric-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #dde3e9;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f9fbfd 0%, #f2f6fa 100%);
+}
+
+.summary-metric-card span {
+  font-size: 0.68rem;
+  color: #5d6874;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.summary-metric-card strong {
+  font-size: 1.14rem;
+  line-height: 1.25;
+  color: #1f2a34;
+}
+
+.summary-metric-card--accent {
+  background: linear-gradient(135deg, #1b78c2 0%, #0f5e9a 100%);
+  border-color: #0f5e9a;
+}
+
+.summary-metric-card--accent span,
+.summary-metric-card--accent strong {
+  color: #ffffff;
+}
+
 /* Calculator Redesign */
 .app-shell {
   background: #eef0f2;
@@ -1473,6 +1533,10 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .summary-hero {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .load-grid--purlin .load-tile--total {
     grid-column: span 2;
   }
@@ -1591,5 +1655,63 @@ textarea {
 @media (max-width: 1100px) {
   .split-view {
     width: min(calc(100% - 20px), 1400px);
+  }
+}
+
+@media (max-width: 720px) {
+  .summary-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .results-table-head--summary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .results-print-action {
+    width: 100%;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  body::before,
+  .topbar,
+  .split-left,
+  .results-print-action,
+  .mode-toggle,
+  .selection-row {
+    display: none !important;
+  }
+
+  .app-shell,
+  .results-panel,
+  .split-view,
+  .split-right {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .split-view {
+    width: 100%;
+    margin: 0;
+    display: block;
+  }
+
+  .results-panel {
+    padding: 0;
+  }
+
+  .results-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .table-container {
+    overflow: visible;
   }
 }

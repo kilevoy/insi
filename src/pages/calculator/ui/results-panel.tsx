@@ -507,10 +507,45 @@ function renderGeneralSpecificationOverview(
     (columnResult?.specification.totalMassKg ?? 0) + (selectedCandidate?.totalMassKg ?? 0)
   const combinedCostRub =
     (columnResult?.specification.totalCostRub ?? 0) + (selectedCostRub ?? 0)
+  const combinedColumnsCount =
+    columnResult?.specification.groups.reduce((sum, group) => sum + group.columnsCount, 0) ?? 0
+  const selectedPurlinLabel = selectedCandidate
+    ? `${selectedCandidate.family ?? '-'} / ${selectedCandidate.profile}`
+    : 'Не выбран'
 
   return (
-    <div className="results-section">
-      <h3 className="results-section-title">Общие сведения о расчете</h3>
+    <div className="results-section results-section--summary-sheet">
+      <div className="results-table-head results-table-head--summary">
+        <div>
+          <h3 className="results-section-title">Общие сведения о расчете</h3>
+          <p className="results-inline-note" style={{ marginTop: 6 }}>
+            Сводная спецификация здания по текущим выбранным режимам расчета колонн и прогонов.
+          </p>
+        </div>
+        <button className="results-print-action" onClick={() => window.print()}>
+          Печать / PDF
+        </button>
+      </div>
+
+      <div className="summary-hero">
+        <div className="summary-metric-card summary-metric-card--accent">
+          <span>Общая масса здания</span>
+          <strong>{formatNumber(combinedMassKg, 0)} кг</strong>
+        </div>
+        <div className="summary-metric-card">
+          <span>Ориентировочная стоимость</span>
+          <strong>{formatRub(combinedCostRub)} руб.</strong>
+        </div>
+        <div className="summary-metric-card">
+          <span>Колонн / прогонов</span>
+          <strong>{`${combinedColumnsCount} шт. / ${selectedCandidate ? '1 тип' : '—'}`}</strong>
+        </div>
+        <div className="summary-metric-card">
+          <span>Выбранный прогон</span>
+          <strong>{selectedPurlinLabel}</strong>
+        </div>
+      </div>
+
       <div className="load-grid load-grid--summary">
         <div className="load-tile">
           <span>Город</span>
