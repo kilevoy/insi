@@ -625,6 +625,10 @@ function renderGeneralSpecificationOverview(
           <span>Покрытие</span>
           <strong>{input.roofCoveringType}</strong>
         </div>
+        <div className="load-tile">
+          <span>Ограждение стен</span>
+          <strong>{input.wallCoveringType}</strong>
+        </div>
         {showRoofProfileSheet && (
           <div className="load-tile">
             <span>Профлист кровли</span>
