@@ -151,6 +151,13 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
         <div className="topbar-actions">
           <div className="tabs">
             <button
+              className={`tab ${activeTab === 'summary' ? 'active' : ''}`}
+              data-testid="tab-summary"
+              onClick={() => setActiveTab('summary')}
+            >
+              Сводная
+            </button>
+            <button
               className={`tab ${activeTab === 'column' ? 'active' : ''}`}
               data-testid="tab-column"
               onClick={() => setActiveTab('column')}
@@ -175,6 +182,7 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
 
         <div className="split-right">
           <ResultsPanel
+            input={input}
             activeTab={activeTab}
             purlinResult={purlinResult}
             columnResult={columnResult}

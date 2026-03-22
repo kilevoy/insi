@@ -6,6 +6,7 @@ import type { PurlinCalculationResult } from '@/domain/purlin/model/calculate-pu
 import type { UnifiedInputState } from '../model/unified-input'
 
 interface ResultsPanelProps {
+  input: UnifiedInputState
   activeTab: DomainTab
   purlinResult: PurlinCalculationResult | null
   columnResult: ColumnCalculationResult | null
@@ -100,6 +101,45 @@ function estimatePurlinCount(candidate: CandidateResult, frameStepM: number): nu
 
   const estimate = candidate.totalMassKg / (candidate.unitMassKg * frameStepM)
   return Math.max(1, Math.round(estimate))
+}
+
+function resolvePurlinSpecificationState(
+  purlinResult: PurlinCalculationResult | null,
+  source: UnifiedInputState['purlinSpecificationSource'],
+  selectionMode: UnifiedInputState['purlinSelectionMode'],
+  selectedSortPurlinIndex: number,
+  selectedLstkPurlinIndex: number,
+) {
+  const sortCandidates = filterAvailableCandidates(purlinResult?.sortSteelTop10 ?? [])
+  const autoSortCandidate = sortCandidates[0]
+  const manualSortCandidate = sortCandidates[selectedSortPurlinIndex]
+
+  const lstkCandidates = filterAvailableCandidates([...(purlinResult?.lstkMp350Top ?? []), ...(purlinResult?.lstkMp390Top ?? [])])
+  const autoLstkCandidate = lstkCandidates
+    .map((candidate) => ({ candidate, costRub: resolveCandidateCostRub(candidate) ?? Number.POSITIVE_INFINITY }))
+    .sort((left, right) => left.costRub - right.costRub)[0]?.candidate
+  const manualLstkCandidate = lstkCandidates[selectedLstkPurlinIndex]
+
+  const selectedCandidate =
+    source === 'sort'
+      ? selectionMode === 'manual'
+        ? manualSortCandidate ?? autoSortCandidate
+        : autoSortCandidate
+      : selectionMode === 'manual'
+        ? manualLstkCandidate ?? autoLstkCandidate
+        : autoLstkCandidate
+
+  return {
+    sortCandidates,
+    lstkCandidates,
+    selectedCandidate,
+    selectedCostRub: selectedCandidate ? resolveCandidateCostRub(selectedCandidate) : null,
+    totalPurlinCount:
+      selectedCandidate && purlinResult
+        ? estimatePurlinCount(selectedCandidate, purlinResult.loadSummary.frameStepM)
+        : 0,
+    sourceLabel: source === 'sort' ? 'Сортовой прокат' : 'ЛСТК',
+  }
 }
 
 function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[], limit?: number) {
@@ -211,29 +251,13 @@ function renderPurlinSpecification(
     return null
   }
 
-  const sortCandidates = filterAvailableCandidates(purlinResult.sortSteelTop10)
-  const autoSortCandidate = sortCandidates[0]
-  const manualSortCandidate = sortCandidates[selectedSortPurlinIndex]
-
-  const lstkCandidates = filterAvailableCandidates([...purlinResult.lstkMp350Top, ...purlinResult.lstkMp390Top])
-  const autoLstkCandidate = lstkCandidates
-    .map((candidate) => ({ candidate, costRub: resolveCandidateCostRub(candidate) ?? Number.POSITIVE_INFINITY }))
-    .sort((left, right) => left.costRub - right.costRub)[0]?.candidate
-  const manualLstkCandidate = lstkCandidates[selectedLstkPurlinIndex]
-
-  const selectedCandidate =
-    source === 'sort'
-      ? selectionMode === 'manual'
-        ? manualSortCandidate ?? autoSortCandidate
-        : autoSortCandidate
-      : selectionMode === 'manual'
-        ? manualLstkCandidate ?? autoLstkCandidate
-        : autoLstkCandidate
-  const sourceLabel = source === 'sort' ? 'Сортовой прокат' : 'ЛСТК'
-  const selectedCostRub = selectedCandidate ? resolveCandidateCostRub(selectedCandidate) : null
-  const totalPurlinCount = selectedCandidate
-    ? estimatePurlinCount(selectedCandidate, purlinResult.loadSummary.frameStepM)
-    : 0
+  const { selectedCandidate, sourceLabel, selectedCostRub, totalPurlinCount } = resolvePurlinSpecificationState(
+    purlinResult,
+    source,
+    selectionMode,
+    selectedSortPurlinIndex,
+    selectedLstkPurlinIndex,
+  )
 
   return (
     <div className="results-section">
@@ -381,7 +405,7 @@ function renderColumnCandidatesBlock(
   })
 }
 
-function renderSpecification(columnResult: ColumnCalculationResult | null) {
+function renderColumnSpecification(columnResult: ColumnCalculationResult | null) {
   if (!columnResult?.specification) {
     return null
   }
@@ -460,7 +484,109 @@ function renderSpecification(columnResult: ColumnCalculationResult | null) {
   )
 }
 
+function renderGeneralSpecificationOverview(
+  input: UnifiedInputState,
+  purlinResult: PurlinCalculationResult | null,
+  columnResult: ColumnCalculationResult | null,
+  purlinSpecificationSource: UnifiedInputState['purlinSpecificationSource'],
+  purlinSelectionMode: UnifiedInputState['purlinSelectionMode'],
+  selectedSortPurlinIndex: number,
+  selectedLstkPurlinIndex: number,
+  columnSelectionMode: UnifiedInputState['columnSelectionMode'],
+  isColumnManualMode: boolean,
+) {
+  const { selectedCandidate, selectedCostRub } = resolvePurlinSpecificationState(
+    purlinResult,
+    purlinSpecificationSource,
+    purlinSelectionMode,
+    selectedSortPurlinIndex,
+    selectedLstkPurlinIndex,
+  )
+
+  const combinedMassKg =
+    (columnResult?.specification.totalMassKg ?? 0) + (selectedCandidate?.totalMassKg ?? 0)
+  const combinedCostRub =
+    (columnResult?.specification.totalCostRub ?? 0) + (selectedCostRub ?? 0)
+
+  return (
+    <div className="results-section">
+      <h3 className="results-section-title">Общие сведения о расчете</h3>
+      <div className="load-grid load-grid--summary">
+        <div className="load-tile">
+          <span>Город</span>
+          <strong>{input.city}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Кровля</span>
+          <strong>{input.roofType}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Тип местности</span>
+          <strong>{input.terrainType}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Пролет x длина</span>
+          <strong>{`${formatNumber(input.spanM, 2)} x ${formatNumber(input.buildingLengthM, 2)} м`}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Высота x уклон</span>
+          <strong>{`${formatNumber(input.buildingHeightM, 2)} м / ${formatNumber(input.roofSlopeDeg, 1)}°`}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Шаг рам x фахверк</span>
+          <strong>{`${formatNumber(input.frameStepM, 2)} м / ${formatNumber(input.fakhverkStepM, 2)} м`}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Покрытие</span>
+          <strong>{input.roofCoveringType}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Профлист</span>
+          <strong>{input.profileSheet}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Снеговой мешок</span>
+          <strong>{input.snowBagMode}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Подбор колонн</span>
+          <strong>{columnSelectionMode === 'engineering' ? 'Инженерный (H_max)' : 'Excel (без H_max)'}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Выбор колонн</span>
+          <strong>{isColumnManualMode ? 'Ручной' : 'Авто'}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Источник прогонов</span>
+          <strong>{purlinSpecificationSource === 'sort' ? 'Сортовой' : 'ЛСТК'}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Выбор прогонов</span>
+          <strong>{purlinSelectionMode === 'manual' ? 'Ручной' : 'Авто'}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Сумма колонн, кг</span>
+          <strong>{columnResult ? formatNumber(columnResult.specification.totalMassKg, 0) : '-'}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Сумма прогонов, кг</span>
+          <strong>{selectedCandidate ? formatNumber(selectedCandidate.totalMassKg, 0) : '-'}</strong>
+        </div>
+        <div className="load-tile load-tile--total">
+          <span>Общая масса / стоимость</span>
+          <strong>
+            {columnResult || selectedCandidate
+              ? `${formatNumber(combinedMassKg, 0)} кг / ${formatRub(combinedCostRub)} руб.`
+              : '-'}
+          </strong>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ResultsPanel({
+  input,
   activeTab,
   purlinResult,
   columnResult,
@@ -481,7 +607,19 @@ export function ResultsPanel({
   onSortPurlinSelect,
   onLstkPurlinSelect,
 }: ResultsPanelProps) {
-  const activeError = activeTab === 'purlin' ? purlinError : columnError
+  const activeErrors =
+    activeTab === 'summary'
+      ? [
+          { scope: 'Прогоны', message: purlinError },
+          { scope: 'Колонны', message: columnError },
+        ].filter((item): item is { scope: string; message: string } => Boolean(item.message))
+      : activeTab === 'purlin'
+        ? purlinError
+          ? [{ scope: 'Прогоны', message: purlinError }]
+          : []
+        : columnError
+          ? [{ scope: 'Колонны', message: columnError }]
+          : []
   const sortPurlinCandidates = filterAvailableCandidates(purlinResult?.sortSteelTop10 ?? [])
   const lstkPurlinCandidates = filterAvailableCandidates([
     ...(purlinResult?.lstkMp350Top ?? []),
@@ -494,14 +632,41 @@ export function ResultsPanel({
 
   return (
     <div className={`results-panel ${isPending ? 'pending' : ''}`}>
-      {activeError && (
+      {activeErrors.length > 0 && (
         <div className="results-error">
           <h4 style={{ margin: '0 0 8px' }}>Ошибка расчета</h4>
-          <p style={{ margin: 0 }}>{activeError}</p>
+          {activeErrors.map((item) => (
+            <p key={item.scope} style={{ margin: '0 0 6px' }}>
+              <strong>{item.scope}: </strong>
+              {item.message}
+            </p>
+          ))}
         </div>
       )}
 
-      {activeTab === 'purlin' ? (
+      {activeTab === 'summary' ? (
+        <div className="tab-pane animate-in">
+          {renderGeneralSpecificationOverview(
+            input,
+            purlinResult,
+            columnResult,
+            purlinSpecificationSource,
+            purlinSelectionMode,
+            selectedSortPurlinIndex,
+            selectedLstkPurlinIndex,
+            columnSelectionMode,
+            isColumnManualMode,
+          )}
+          {renderColumnSpecification(columnResult)}
+          {renderPurlinSpecification(
+            purlinResult,
+            purlinSpecificationSource,
+            purlinSelectionMode,
+            selectedSortPurlinIndex,
+            selectedLstkPurlinIndex,
+          )}
+        </div>
+      ) : activeTab === 'purlin' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">
             <h3 className="results-section-title">Нагрузки и расчетные параметры</h3>
@@ -707,7 +872,7 @@ export function ResultsPanel({
           </div>
 
           {renderColumnCandidatesBlock(columnResult, isColumnManualMode, onColumnProfileSelect)}
-          {renderSpecification(columnResult)}
+          {renderColumnSpecification(columnResult)}
         </div>
       )}
     </div>
