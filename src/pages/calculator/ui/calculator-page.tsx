@@ -1,4 +1,4 @@
-﻿import { useState, useTransition } from 'react'
+﻿import { useEffect, useState, useTransition } from 'react'
 import type { DomainTab } from '@/app/App'
 import { calculateColumn, type ColumnCalculationResult } from '@/domain/column/model/calculate-column'
 import { calculatePurlin, type PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
@@ -15,6 +15,8 @@ interface CalculatorPageProps {
 
 type ColumnGroupKey = 'extreme' | 'fachwerk' | 'middle'
 type CalculationState<T> = { result: T | null; error: string | null }
+type ThemeMode = 'light' | 'dark'
+const THEME_STORAGE_KEY = 'metalcalc-theme'
 
 const PROFILE_FIELD_BY_GROUP: Record<
   ColumnGroupKey,
@@ -30,8 +32,24 @@ const PROFILE_FIELD_BY_GROUP: Record<
 
 export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
   const [activeTab, setActiveTab] = useState<DomainTab>(initialDomain)
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') {
+      return 'light'
+    }
+
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      return savedTheme
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
   const { input, setField, setFields } = useCalculatorStore()
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, themeMode)
+  }, [themeMode])
   const safeCalculatePurlin = (nextInput: UnifiedInputState): CalculationState<PurlinCalculationResult> => {
     try {
       return {
@@ -135,7 +153,7 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
   }
 
   return (
-    <div className="app-shell dark-mode-ready" data-testid="calculator-page">
+    <div className="app-shell dark-mode-ready" data-testid="calculator-page" data-theme={themeMode}>
       <header className="topbar">
         {onBack && (
           <button className="btn-back" data-testid="back-to-home" onClick={onBack}>
@@ -170,6 +188,23 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
               onClick={() => setActiveTab('purlin')}
             >
               Прогоны
+            </button>
+          </div>
+
+          <div className="theme-toggle" role="group" aria-label="Переключение темы">
+            <button
+              className={`theme-button ${themeMode === 'light' ? 'active' : ''}`}
+              data-testid="theme-light"
+              onClick={() => setThemeMode('light')}
+            >
+              Светлая
+            </button>
+            <button
+              className={`theme-button ${themeMode === 'dark' ? 'active' : ''}`}
+              data-testid="theme-dark"
+              onClick={() => setThemeMode('dark')}
+            >
+              Тёмная
             </button>
           </div>
         </div>
@@ -208,4 +243,5 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
     </div>
   )
 }
+
 
