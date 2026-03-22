@@ -608,12 +608,14 @@ function renderGeneralSpecificationOverview(
           <strong>{input.terrainType}</strong>
         </div>
         <div className="load-tile">
-          <span>Пролет x длина</span>
-          <strong>{`${formatNumber(input.spanM, 2)} x ${formatNumber(input.buildingLengthM, 2)} м`}</strong>
+          <span>Ширина, м x Длина, м x Высота, м</span>
+          <strong>
+            {`${formatNumber(input.spanM, 2)} x ${formatNumber(input.buildingLengthM, 2)} x ${formatNumber(input.buildingHeightM, 2)}`}
+          </strong>
         </div>
         <div className="load-tile">
-          <span>Высота x уклон</span>
-          <strong>{`${formatNumber(input.buildingHeightM, 2)} м / ${formatNumber(input.roofSlopeDeg, 1)}°`}</strong>
+          <span>Уклон кровли</span>
+          <strong>{`${formatNumber(input.roofSlopeDeg, 1)}°`}</strong>
         </div>
         <div className="load-tile">
           <span>Шаг рам x фахверк</span>
