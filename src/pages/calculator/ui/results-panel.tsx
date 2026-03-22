@@ -45,6 +45,17 @@ const WIND_REGION_BY_KPA = new Map<number, string>([
   [0.85, 'VII'],
 ])
 
+const SNOW_REGION_LIMITS: ReadonlyArray<{ maxKpa: number; label: string }> = [
+  { maxKpa: 0.5, label: 'I' },
+  { maxKpa: 1.0, label: 'II' },
+  { maxKpa: 1.5, label: 'III' },
+  { maxKpa: 2.0, label: 'IV' },
+  { maxKpa: 2.5, label: 'V' },
+  { maxKpa: 3.0, label: 'VI' },
+  { maxKpa: 3.5, label: 'VII' },
+  { maxKpa: 4.0, label: 'VIII' },
+]
+
 function formatNumber(value: number, fractionDigits = 2): string {
   return value.toLocaleString('ru-RU', {
     minimumFractionDigits: 0,
@@ -84,7 +95,8 @@ function resolveSnowRegionLabel(snowLoadKpa: number | undefined): string {
     return '-'
   }
 
-  return `${formatNumber(snowLoadKpa, 2)} (из справочника)`
+  const band = SNOW_REGION_LIMITS.find((item) => snowLoadKpa <= item.maxKpa + 0.001)
+  return band?.label ?? 'по таблице города'
 }
 
 function resolveCandidateCostRub(candidate: CandidateResult): number | null {
@@ -545,6 +557,9 @@ function renderGeneralSpecificationOverview(
     : 'Не выбран'
   const snowRegionKpa = purlinResult?.loadSummary.snowRegionKpa
   const windRegionKpa = purlinResult?.loadSummary.windRegionKpa
+  const roofCoveringNormalized = input.roofCoveringType.toLowerCase()
+  const showRoofProfileSheet =
+    roofCoveringNormalized.includes('профлист') || roofCoveringNormalized.includes('наше')
 
   return (
     <div className="results-section results-section--summary-sheet">
@@ -608,10 +623,12 @@ function renderGeneralSpecificationOverview(
           <span>Покрытие</span>
           <strong>{input.roofCoveringType}</strong>
         </div>
-        <div className="load-tile">
-          <span>Профлист</span>
-          <strong>{input.profileSheet}</strong>
-        </div>
+        {showRoofProfileSheet && (
+          <div className="load-tile">
+            <span>Профлист кровли</span>
+            <strong>{input.profileSheet}</strong>
+          </div>
+        )}
         <div className="load-tile">
           <span>Снеговой мешок</span>
           <strong>{input.snowBagMode}</strong>
