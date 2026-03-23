@@ -137,6 +137,18 @@ function filterAvailableCandidates(candidates: CandidateResult[]): CandidateResu
   return candidates
 }
 
+function formatPurlinFamilyLabel(family: string | undefined): string {
+  if (!family) {
+    return '-'
+  }
+
+  if (family.toLowerCase() === 'sort steel') {
+    return 'Сортовой прокат'
+  }
+
+  return family
+}
+
 function estimatePurlinCount(candidate: CandidateResult, frameStepM: number): number {
   if (frameStepM <= 0 || candidate.unitMassKg <= 0 || candidate.totalMassKg <= 0) {
     return 0
@@ -195,23 +207,23 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
         <h3 className="results-section-title" style={{ marginBottom: 0 }}>
           {title}
         </h3>
-        <span>Options: {displayList.length}</span>
+        <span>Опции: {displayList.length}</span>
       </div>
 
       {displayList.length === 0 ? (
-        <div className="results-empty">No matching options found.</div>
+        <div className="results-empty">Подходящие варианты не найдены.</div>
       ) : isSortSteel ? (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Section</th>
-                <th>Steel</th>
-                <th>Step, mm</th>
-                <th>Weight, kg</th>
-                <th>Cost, kRUB</th>
-                <th>Util.</th>
+                <th>Профиль</th>
+                <th>Сталь</th>
+                <th>Шаг, мм</th>
+                <th>Масса, кг</th>
+                <th>Стоимость, тыс. руб.</th>
+                <th>К-т исп.</th>
               </tr>
             </thead>
             <tbody>
@@ -239,18 +251,18 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
             <thead>
               <tr>
                 <th>#</th>
-                <th>Line</th>
-                <th>Section</th>
-                <th>Step, mm</th>
-                <th>Mass 1 p.m.</th>
-                <th>Mass / step</th>
-                <th>Mass / building</th>
-                <th>With braces</th>
-                <th>Black, kg</th>
-                <th>Galv, kg</th>
-                <th>Length, m</th>
-                <th>Mass 1m</th>
-                <th>Util.</th>
+                <th>Линия</th>
+                <th>Профиль</th>
+                <th>Шаг, мм</th>
+                <th>Масса 1 п.м., кг</th>
+                <th>Масса / шаг, кг</th>
+                <th>Масса / здание, кг</th>
+                <th>С раскосами, кг</th>
+                <th>Черный, кг</th>
+                <th>Оцинк., кг</th>
+                <th>Длина, м</th>
+                <th>Масса 1 м, кг</th>
+                <th>К-т исп.</th>
               </tr>
             </thead>
             <tbody>
@@ -326,7 +338,7 @@ function renderPurlinSpecification(
             <tbody>
               <tr>
                 <td>{sourceLabel}</td>
-                <td>{selectedCandidate.family ?? '-'}</td>
+                <td>{formatPurlinFamilyLabel(selectedCandidate.family)}</td>
                 <td>{selectedCandidate.profile}</td>
                 <td>{selectedCandidate.steelGrade}</td>
                 <td>{selectedCandidate.stepMm ? formatNumber(selectedCandidate.stepMm, 0) : '-'}</td>
@@ -553,7 +565,7 @@ function renderGeneralSpecificationOverview(
   const combinedColumnsCount =
     columnResult?.specification.groups.reduce((sum, group) => sum + group.columnsCount, 0) ?? 0
   const selectedPurlinLabel = selectedCandidate
-    ? `${selectedCandidate.family ?? '-'} / ${selectedCandidate.profile}`
+    ? `${formatPurlinFamilyLabel(selectedCandidate.family)} / ${selectedCandidate.profile}`
     : 'Не выбран'
   const snowRegionKpa = purlinResult?.loadSummary.snowRegionKpa
   const windRegionKpa = purlinResult?.loadSummary.windRegionKpa
@@ -902,7 +914,7 @@ export function ResultsPanel({
                     >
                       {manualPurlinOptions.map((candidate, index) => (
                         <option key={`${candidate.family}-${candidate.profile}-${candidate.steelGrade}-${index}`} value={index}>
-                          {`${index + 1}. ${candidate.family ?? '-'} / ${candidate.profile} / ${candidate.steelGrade}`}
+                          {`${index + 1}. ${formatPurlinFamilyLabel(candidate.family)} / ${candidate.profile} / ${candidate.steelGrade}`}
                         </option>
                       ))}
                     </select>
