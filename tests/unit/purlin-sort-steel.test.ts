@@ -91,5 +91,19 @@ describe('purlin sort steel input normalization', () => {
     expect(variantCandidates[0]?.totalMassKg).toBeCloseTo(baseCandidates[0]?.totalMassKg ?? 0, 10)
     expect(variantCandidates[0]?.objectiveValue).toBeCloseTo(baseCandidates[0]?.objectiveValue ?? 0, 10)
   })
+
+  it('keeps conservative sort steel candidates for heavy snow bag loads', () => {
+    const scenario = {
+      ...defaultPurlinInput,
+      snowBagMode: 'поперёк здания',
+      heightDifferenceM: 4.5,
+      adjacentBuildingSizeM: 9.5,
+    }
+    const context = buildPurlinDerivedContext(scenario)
+    const candidates = calculateSortSteelTopCandidates(scenario, context)
+
+    expect(candidates.length).toBeGreaterThan(0)
+    expect(candidates[0]?.stepMm).toBeLessThanOrEqual(600)
+  })
 })
 

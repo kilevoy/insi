@@ -211,9 +211,14 @@ export function calculatePurlinAutoMaxStepMm(
   })
 
   if (!matchingRow) {
-    // Keep calculation resilient for overload scenarios: no matching auto-step
-    // means no selectable step, and downstream ranking should return empty lists.
-    return 0
+    // Overload beyond table range: clamp to the minimum supported step
+    // so selection stays conservative but still attempts profile matching.
+    const minimumStepMm = purlinAutoStepCapacityTable.reduce(
+      (minimum, row) => Math.min(minimum, row.stepMm),
+      Number.POSITIVE_INFINITY,
+    )
+
+    return Number.isFinite(minimumStepMm) ? minimumStepMm : 0
   }
 
   return matchingRow.stepMm

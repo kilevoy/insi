@@ -8,6 +8,7 @@ import {
 } from '@/domain/purlin/model/purlin-load-chain'
 import { buildPurlinDerivedContext } from '@/domain/purlin/model/purlin-derived-context'
 import { defaultPurlinInput } from '@/domain/purlin/model/purlin-input'
+import { purlinAutoStepCapacityTable } from '@/domain/purlin/model/purlin-reference.generated'
 
 describe('purlin load chain', () => {
   it('matches the default workbook snow, wind, service, and total load', () => {
@@ -60,13 +61,17 @@ describe('purlin load chain', () => {
     expect(calculatePurlinAutoMaxStepMm(scenario, context)).toBe(2550)
   })
 
-  it('returns zero auto max step instead of throwing when lookup value exceeds table capacity', () => {
+  it('clamps auto max step to minimum supported step when lookup exceeds table capacity', () => {
     const scenario = {
       ...defaultPurlinInput,
       responsibilityLevel: '5',
     }
     const context = buildPurlinDerivedContext(scenario)
+    const minimumSupportedStepMm = purlinAutoStepCapacityTable.reduce(
+      (minimum, row) => Math.min(minimum, row.stepMm),
+      Number.POSITIVE_INFINITY,
+    )
 
-    expect(calculatePurlinAutoMaxStepMm(scenario, context)).toBe(0)
+    expect(calculatePurlinAutoMaxStepMm(scenario, context)).toBe(minimumSupportedStepMm)
   })
 })
