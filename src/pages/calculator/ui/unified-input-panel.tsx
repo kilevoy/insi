@@ -59,7 +59,9 @@ export function UnifiedInputPanel({ input, onChange }: UnifiedInputPanelProps) {
   const roofCoveringNormalized = input.roofCoveringType.toLowerCase()
   const wallCoveringNormalized = input.wallCoveringType.toLowerCase()
   const showRoofProfileSheet =
-    roofCoveringNormalized.includes('профлист') || roofCoveringNormalized.includes('наше')
+    roofCoveringNormalized.includes('профлист') ||
+    roofCoveringNormalized.includes('наше') ||
+    roofCoveringNormalized.includes('малоуклонная кровля')
   const showWallProfileSheet =
     wallCoveringNormalized.includes('наше') && wallCoveringNormalized.includes('гвл')
 
