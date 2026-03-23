@@ -257,6 +257,7 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
                 <th>Масса 1 п.м., кг</th>
                 <th>Масса / шаг, кг</th>
                 <th>Масса / здание, кг</th>
+                <th>Стоимость, руб.</th>
                 <th>С раскосами, кг</th>
                 <th>Черный, кг</th>
                 <th>Оцинк., кг</th>
@@ -266,27 +267,32 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
               </tr>
             </thead>
             <tbody>
-              {displayList.map((candidate, index) => (
-                <tr key={`${candidate.family}-${candidate.profile}-${index}`}>
-                  <td>{index + 1}</td>
-                  <td>{candidate.excelMetrics?.lineLabel ?? '-'}</td>
-                  <td>{candidate.profile}</td>
-                  <td>{candidate.stepMm ? formatNumber(candidate.stepMm, 0) : '-'}</td>
-                  <td>
-                    {candidate.excelMetrics?.unitMassPerMeterKg === undefined
-                      ? '-'
-                      : formatNumber(candidate.excelMetrics.unitMassPerMeterKg, 2)}
-                  </td>
-                  <td>{candidate.excelMetrics?.massPerStepKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massPerStepKg, 4)}</td>
-                  <td>{formatNumber(candidate.totalMassKg, 3)}</td>
-                  <td>{candidate.excelMetrics?.massWithBracesKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massWithBracesKg, 4)}</td>
-                  <td>{candidate.excelMetrics?.blackMassKg == null ? '-' : formatNumber(candidate.excelMetrics.blackMassKg, 3)}</td>
-                  <td>{candidate.excelMetrics?.galvanizedMassKg == null ? '-' : formatNumber(candidate.excelMetrics.galvanizedMassKg, 3)}</td>
-                  <td>{candidate.excelMetrics?.developedLengthM === undefined ? '-' : formatNumber(candidate.excelMetrics.developedLengthM, 3)}</td>
-                  <td>{candidate.excelMetrics?.massPerMeterKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massPerMeterKg, 4)}</td>
-                  <td>{formatNumber(candidate.utilization, 4)}</td>
-                </tr>
-              ))}
+              {displayList.map((candidate, index) => {
+                const candidateCostRub = resolveCandidateCostRub(candidate)
+
+                return (
+                  <tr key={`${candidate.family}-${candidate.profile}-${index}`}>
+                    <td>{index + 1}</td>
+                    <td>{candidate.excelMetrics?.lineLabel ?? '-'}</td>
+                    <td>{candidate.profile}</td>
+                    <td>{candidate.stepMm ? formatNumber(candidate.stepMm, 0) : '-'}</td>
+                    <td>
+                      {candidate.excelMetrics?.unitMassPerMeterKg === undefined
+                        ? '-'
+                        : formatNumber(candidate.excelMetrics.unitMassPerMeterKg, 2)}
+                    </td>
+                    <td>{candidate.excelMetrics?.massPerStepKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massPerStepKg, 4)}</td>
+                    <td>{formatNumber(candidate.totalMassKg, 3)}</td>
+                    <td>{candidateCostRub === null ? '-' : formatRub(candidateCostRub)}</td>
+                    <td>{candidate.excelMetrics?.massWithBracesKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massWithBracesKg, 4)}</td>
+                    <td>{candidate.excelMetrics?.blackMassKg == null ? '-' : formatNumber(candidate.excelMetrics.blackMassKg, 3)}</td>
+                    <td>{candidate.excelMetrics?.galvanizedMassKg == null ? '-' : formatNumber(candidate.excelMetrics.galvanizedMassKg, 3)}</td>
+                    <td>{candidate.excelMetrics?.developedLengthM === undefined ? '-' : formatNumber(candidate.excelMetrics.developedLengthM, 3)}</td>
+                    <td>{candidate.excelMetrics?.massPerMeterKg === undefined ? '-' : formatNumber(candidate.excelMetrics.massPerMeterKg, 4)}</td>
+                    <td>{formatNumber(candidate.utilization, 4)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
