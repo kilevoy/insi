@@ -356,7 +356,7 @@ export function UnifiedInputPanel({ input, onChange }: UnifiedInputPanelProps) {
         <div className="field-row">
           <NumberField label="Мин. шаг, мм" value={input.manualMinStepMm} onValue={(value) => onChange('manualMinStepMm', value)} step="1" min={0} />
           <NumberField label="Макс. шаг, мм" value={input.manualMaxStepMm} onValue={(value) => onChange('manualMaxStepMm', value)} step="1" min={0} />
-          <NumberField label="Brace Spacing, m" value={input.braceSpacingM} onValue={(value) => onChange('braceSpacingM', value)} step="0.1" min={0.1} />
+          <NumberField label="Шаг распорок" value={input.braceSpacingM} onValue={(value) => onChange('braceSpacingM', value)} step="0.1" min={0.1} />
         </div>
         <div className="field-row">
           <NumberField

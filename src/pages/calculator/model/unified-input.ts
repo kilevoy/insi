@@ -198,16 +198,6 @@ function normalizeSnowBagMode(value: unknown): UnifiedInputState['snowBagMode'] 
   return defaultUnifiedInput.snowBagMode
 }
 
-function normalizeColumnSelectionMode(value: unknown): UnifiedInputState['columnSelectionMode'] {
-  const text = normalizeLegacyText(value).toLowerCase()
-
-  if (text.includes('excel') || text.includes('xls') || text.includes('no h')) {
-    return 'excel'
-  }
-
-  return 'engineering'
-}
-
 function normalizePurlinSpecificationSource(
   value: unknown,
 ): UnifiedInputState['purlinSpecificationSource'] {
@@ -355,7 +345,7 @@ export function normalizeLoadedInput(raw: unknown): UnifiedInputState {
     snowRetentionPurlin: normalizePresenceMode(parsed.snowRetentionPurlin),
     barrierPurlin: normalizePresenceMode(parsed.barrierPurlin),
     columnType: normalizeColumnType(parsed.columnType),
-    columnSelectionMode: normalizeColumnSelectionMode(parsed.columnSelectionMode),
+    columnSelectionMode: defaultUnifiedInput.columnSelectionMode,
     purlinSpecificationSource: normalizePurlinSpecificationSource(parsed.purlinSpecificationSource),
     purlinSelectionMode: normalizePurlinSelectionMode(parsed.purlinSelectionMode),
     supportCraneMode: normalizePresenceMode(parsed.supportCraneMode),

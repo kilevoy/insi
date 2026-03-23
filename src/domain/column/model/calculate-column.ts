@@ -20,11 +20,6 @@ import type {
 import { columnBraceUnitMassKgPerM } from '@/domain/column/model/column-reference.generated'
 
 export type { ColumnCalculationResult }
-export type ColumnSelectionMode = 'engineering' | 'excel'
-
-interface ColumnCalculationOptions {
-  selectionMode?: ColumnSelectionMode
-}
 
 const COLUMN_GROUPS: ReadonlyArray<{
   key: ColumnGroupKey
@@ -202,14 +197,8 @@ function buildGroupGeometries(input: ColumnInput): ColumnGroupGeometry[] {
 }
 
 function resolveAnalysisHeightM(
-  input: ColumnInput,
   group: ColumnGroupGeometry,
-  selectionMode: ColumnSelectionMode,
 ): number {
-  if (selectionMode === 'excel') {
-    return input.buildingHeightM
-  }
-
   return group.criticalHeightM
 }
 
@@ -334,17 +323,15 @@ function buildGroupSpecification(
 
 export function calculateColumn(
   input: ColumnInput,
-  options: ColumnCalculationOptions = {},
 ): ColumnCalculationResult {
   const validated = columnInputSchema.parse(input)
-  const selectionMode = options.selectionMode ?? 'engineering'
   const derivedContext = buildColumnDerivedContext(validated)
   const groupGeometries = buildGroupGeometries(validated)
 
   const topCandidatesByType = groupGeometries.reduce<ColumnTopCandidatesByType>(
     (acc, group) => {
       acc[group.key] = calculateColumnTopCandidatesForType(validated, group.type, {
-        analysisHeightM: resolveAnalysisHeightM(validated, group, selectionMode),
+        analysisHeightM: resolveAnalysisHeightM(group),
       })
       return acc
     },
@@ -367,10 +354,7 @@ export function calculateColumn(
       sourceWorkbook: 'column_calculator_final_release.xlsx',
       sourceSheets: ['Summary', 'Calculation', 'Wind SP', 'Loads SP 20'],
       status: 'in-progress',
-      note:
-        selectionMode === 'excel'
-          ? `Column logic runs in Excel parity mode (without H_max override) for ${validated.city}.`
-          : `Column logic uses H_max selection for ${validated.city} with group-level manual override.`,
+      note: `Column logic uses H_max selection for ${validated.city} with group-level manual override.`,
     },
     derivedContext,
     topCandidates: topCandidatesByType[activeGroupKey],

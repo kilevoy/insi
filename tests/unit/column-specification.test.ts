@@ -48,27 +48,6 @@ describe('column specification geometry', () => {
     expect(selected.totalMassKg).toBeCloseTo(expectedCandidateMass, 10)
   })
 
-  it('uses base building height in excel mode (without H_max)', () => {
-    const input = {
-      ...defaultColumnInput,
-      roofType: 'gable',
-      spansCount: 'multi',
-      buildingHeightM: 10,
-      spanM: 24,
-      roofSlopeDeg: 6,
-    }
-    const result = calculateColumn(input, { selectionMode: 'excel' })
-    const fachwerk = findGroup(result, 'fachwerk')
-    const selected = result.topCandidatesByType.fachwerk[0]
-    const expectedCriticalHeight = 10 + (24 / 2) * Math.tan((6 / 180) * Math.PI)
-    const expectedCandidateMass =
-      selected.unitMassKg * input.buildingHeightM * 1.15 +
-      (selected.braceCount ?? 0) * defaultColumnInput.facadeColumnStepM * columnBraceUnitMassKgPerM * 1.15
-
-    expect(fachwerk.criticalHeightM).toBeCloseTo(expectedCriticalHeight, 10)
-    expect(selected.totalMassKg).toBeCloseTo(expectedCandidateMass, 10)
-  })
-
   it('builds total mass from selected profile and actual geometry lengths', () => {
     const result = calculateColumn({
       ...defaultColumnInput,

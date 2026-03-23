@@ -17,8 +17,6 @@ interface ResultsPanelProps {
   isColumnManualMode: boolean
   onColumnManualModeChange: (isManualMode: boolean) => void
   onColumnProfileSelect: (group: ColumnGroupKey, selectedIndex: number) => void
-  columnSelectionMode: UnifiedInputState['columnSelectionMode']
-  onColumnSelectionModeChange: (mode: UnifiedInputState['columnSelectionMode']) => void
   purlinSpecificationSource: UnifiedInputState['purlinSpecificationSource']
   onPurlinSpecificationSourceChange: (source: UnifiedInputState['purlinSpecificationSource']) => void
   purlinSelectionMode: UnifiedInputState['purlinSelectionMode']
@@ -546,7 +544,6 @@ function renderGeneralSpecificationOverview(
   purlinSelectionMode: UnifiedInputState['purlinSelectionMode'],
   selectedSortPurlinIndex: number,
   selectedLstkPurlinIndex: number,
-  columnSelectionMode: UnifiedInputState['columnSelectionMode'],
   isColumnManualMode: boolean,
 ) {
   const { selectedCandidate, selectedCostRub } = resolvePurlinSpecificationState(
@@ -668,7 +665,7 @@ function renderGeneralSpecificationOverview(
         </div>
         <div className="load-tile">
           <span>Подбор колонн</span>
-          <strong>{columnSelectionMode === 'engineering' ? 'Инженерный (H_max)' : 'Excel (без H_max)'}</strong>
+          <strong>Инженерный (H_max)</strong>
         </div>
         <div className="load-tile">
           <span>Выбор колонн</span>
@@ -714,8 +711,6 @@ export function ResultsPanel({
   isColumnManualMode,
   onColumnManualModeChange,
   onColumnProfileSelect,
-  columnSelectionMode,
-  onColumnSelectionModeChange,
   purlinSpecificationSource,
   onPurlinSpecificationSourceChange,
   purlinSelectionMode,
@@ -772,7 +767,6 @@ export function ResultsPanel({
             purlinSelectionMode,
             selectedSortPurlinIndex,
             selectedLstkPurlinIndex,
-            columnSelectionMode,
             isColumnManualMode,
           )}
           {renderColumnSpecification(columnResult)}
@@ -955,23 +949,13 @@ export function ResultsPanel({
               <h3 className="results-section-title">Режим подбора колонн</h3>
               <div className="mode-toggle">
                 <button
-                  className={`mode-button ${columnSelectionMode === 'engineering' ? 'active' : ''}`}
-                  onClick={() => onColumnSelectionModeChange('engineering')}
+                  className="mode-button active"
+                  disabled
                 >
                   Инженерный (H_max)
                 </button>
-                <button
-                  className={`mode-button ${columnSelectionMode === 'excel' ? 'active' : ''}`}
-                  onClick={() => onColumnSelectionModeChange('excel')}
-                >
-                  Excel (без H_max)
-                </button>
               </div>
-              <p className="results-inline-note">
-                {columnSelectionMode === 'engineering'
-                  ? 'Используется максимальная расчетная длина в группе.'
-                  : 'Подбор ведется как в исходном Excel: без правила H_max.'}
-              </p>
+              <p className="results-inline-note">Используется максимальная расчетная длина в группе.</p>
             </div>
 
             <div className="results-section">

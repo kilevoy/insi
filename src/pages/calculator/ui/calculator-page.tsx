@@ -68,9 +68,7 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
   const safeCalculateColumn = (nextInput: UnifiedInputState): CalculationState<ColumnCalculationResult> => {
     try {
       return {
-        result: calculateColumn(mapToColumnInput(nextInput), {
-          selectionMode: nextInput.columnSelectionMode,
-        }),
+        result: calculateColumn(mapToColumnInput(nextInput)),
         error: null,
       }
     } catch (error) {
@@ -128,10 +126,6 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
   const handleColumnProfileSelection = (group: ColumnGroupKey, selectedIndex: number) => {
     const field = PROFILE_FIELD_BY_GROUP[group]
     handleFieldChange(field, selectedIndex)
-  }
-
-  const handleColumnSelectionModeChange = (mode: UnifiedInputState['columnSelectionMode']) => {
-    handleFieldChange('columnSelectionMode', mode)
   }
 
   const handlePurlinSpecificationSourceChange = (
@@ -237,8 +231,6 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
             isColumnManualMode={input.isManualMode}
             onColumnManualModeChange={handleColumnManualModeChange}
             onColumnProfileSelect={handleColumnProfileSelection}
-            columnSelectionMode={input.columnSelectionMode}
-            onColumnSelectionModeChange={handleColumnSelectionModeChange}
             purlinSpecificationSource={input.purlinSpecificationSource}
             onPurlinSpecificationSourceChange={handlePurlinSpecificationSourceChange}
             purlinSelectionMode={input.purlinSelectionMode}
