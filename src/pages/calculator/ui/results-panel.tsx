@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import type { DomainTab } from '@/app/App'
 import type { CandidateResult } from '@/domain/common/model/candidate-result'
 import type { ColumnCalculationResult } from '@/domain/column/model/calculate-column'
@@ -32,9 +32,9 @@ interface ResultsPanelProps {
 }
 
 const COLUMN_GROUPS: ReadonlyArray<{ key: ColumnGroupKey; title: string }> = [
-  { key: 'extreme', title: 'РљСЂР°Р№РЅСЏСЏ РєРѕР»РѕРЅРЅР° вЂ” РџРѕРґР±РѕСЂ РїСЂРѕС„РёР»РµР№' },
-  { key: 'fachwerk', title: 'Р¤Р°С…РІРµСЂРєРѕРІР°СЏ РєРѕР»РѕРЅРЅР° вЂ” РџРѕРґР±РѕСЂ РїСЂРѕС„РёР»РµР№' },
-  { key: 'middle', title: 'РЎСЂРµРґРЅСЏСЏ РєРѕР»РѕРЅРЅР° вЂ” РџРѕРґР±РѕСЂ РїСЂРѕС„РёР»РµР№' },
+  { key: 'extreme', title: 'Крайняя колонна — Подбор профилей' },
+  { key: 'fachwerk', title: 'Фахверковая колонна — Подбор профилей' },
+  { key: 'middle', title: 'Средняя колонна — Подбор профилей' },
 ]
 
 const WIND_REGION_BY_KPA = new Map<number, string>([
@@ -69,7 +69,7 @@ function formatRub(value: number): string {
   return `${Math.round(value).toLocaleString('ru-RU')}`
 }
 
-function formatStepLimitMm(value: number, zeroLabel = 'Р°РІС‚Рѕ'): string {
+function formatStepLimitMm(value: number, zeroLabel = 'авто'): string {
   return value > 0 ? formatNumber(value, 0) : zeroLabel
 }
 
@@ -82,7 +82,7 @@ function resolveWindRegionLabel(windLoadKpa: number | undefined): string {
     ([kpa]) => Math.abs(kpa - windLoadKpa) < 0.001,
   )
 
-  return exactMatch?.[1] ?? 'РїРѕ С‚Р°Р±Р»РёС†Рµ РіРѕСЂРѕРґР°'
+  return exactMatch?.[1] ?? 'по таблице города'
 }
 
 function resolveSnowRegionLabel(snowLoadKpa: number | undefined): string {
@@ -91,7 +91,7 @@ function resolveSnowRegionLabel(snowLoadKpa: number | undefined): string {
   }
 
   const band = SNOW_REGION_LIMITS.find((item) => snowLoadKpa <= item.maxKpa + 0.001)
-  return band?.label ?? 'РїРѕ С‚Р°Р±Р»РёС†Рµ РіРѕСЂРѕРґР°'
+  return band?.label ?? 'по таблице города'
 }
 
 function resolveCandidateCostRub(candidate: CandidateResult): number | null {
@@ -109,23 +109,23 @@ function resolveCandidateCostRub(candidate: CandidateResult): number | null {
 function resolveColumnProfileType(candidate: CandidateResult): string {
   const familyNormalized = (candidate.family ?? '').toLowerCase()
   if (familyNormalized.includes('mp350') || familyNormalized.includes('mp390')) {
-    return 'Р›РЎРўРљ'
+    return 'ЛСТК'
   }
 
   const profileNormalized = candidate.profile.trim().toLowerCase()
-  if (profileNormalized.startsWith('РєРІ.') || profileNormalized.startsWith('РїСЂ.')) {
-    return 'РўСЂСѓР±Р°'
+  if (profileNormalized.startsWith('кв.') || profileNormalized.startsWith('пр.')) {
+    return 'Труба'
   }
 
-  if (/^\d+\s*Р±\d*/i.test(candidate.profile.trim()) || /^\d+\s*С€\d*/i.test(candidate.profile.trim())) {
-    return 'Р”РІСѓС‚Р°РІСЂ'
+  if (/^\d+\s*б\d*/i.test(candidate.profile.trim()) || /^\d+\s*ш\d*/i.test(candidate.profile.trim())) {
+    return 'Двутавр'
   }
 
-  if (/^\d+\s*[Р°-СЏ]*Рї$/i.test(candidate.profile.trim())) {
-    return 'РЁРІРµР»Р»РµСЂ'
+  if (/^\d+\s*[а-я]*п$/i.test(candidate.profile.trim())) {
+    return 'Швеллер'
   }
 
-  return 'РЎРѕСЂС‚РѕРІРѕР№'
+  return 'Сортовой'
 }
 
 function filterAvailableCandidates(candidates: CandidateResult[]): CandidateResult[] {
@@ -138,7 +138,7 @@ function formatPurlinFamilyLabel(family: string | undefined): string {
   }
 
   if (family.toLowerCase() === 'sort steel') {
-    return 'РЎРѕСЂС‚РѕРІРѕР№ РїСЂРѕРєР°С‚'
+    return 'Сортовой прокат'
   }
 
   return family
@@ -188,7 +188,7 @@ function resolvePurlinSpecificationState(
       selectedCandidate && purlinResult
         ? estimatePurlinCount(selectedCandidate, purlinResult.loadSummary.frameStepM)
         : 0,
-    sourceLabel: source === 'sort' ? 'РЎРѕСЂС‚РѕРІРѕР№ РїСЂРѕРєР°С‚' : 'Р›РЎРўРљ',
+    sourceLabel: source === 'sort' ? 'Сортовой прокат' : 'ЛСТК',
   }
 }
 
@@ -202,23 +202,23 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
         <h3 className="results-section-title" style={{ marginBottom: 0 }}>
           {title}
         </h3>
-        <span>РћРїС†РёРё: {displayList.length}</span>
+        <span>Опции: {displayList.length}</span>
       </div>
 
       {displayList.length === 0 ? (
-        <div className="results-empty">РџРѕРґС…РѕРґСЏС‰РёРµ РІР°СЂРёР°РЅС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹.</div>
+        <div className="results-empty">Подходящие варианты не найдены.</div>
       ) : isSortSteel ? (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th>РџСЂРѕС„РёР»СЊ</th>
-                <th>РЎС‚Р°Р»СЊ</th>
-                <th>РЁР°Рі, РјРј</th>
-                <th>РњР°СЃСЃР°, РєРі</th>
-                <th>Рљ-С‚ РёСЃРї.</th>
-                <th>РЎС‚РѕРёРјРѕСЃС‚СЊ, СЂСѓР±.</th>
+                <th>Профиль</th>
+                <th>Сталь</th>
+                <th>Шаг, мм</th>
+                <th>Масса, кг</th>
+                <th>К-т исп.</th>
+                <th>Стоимость, руб.</th>
               </tr>
             </thead>
             <tbody>
@@ -246,19 +246,19 @@ function renderPurlinCandidatesTable(title: string, candidates: CandidateResult[
             <thead>
               <tr>
                 <th>#</th>
-                <th>Р›РёРЅРёСЏ</th>
-                <th>РџСЂРѕС„РёР»СЊ</th>
-                <th>РЁР°Рі, РјРј</th>
-                <th>РњР°СЃСЃР° 1 Рї.Рј., РєРі</th>
-                <th>РњР°СЃСЃР° / С€Р°Рі, РєРі</th>
-                <th>РњР°СЃСЃР° / Р·РґР°РЅРёРµ, РєРі</th>
-                <th>РЎ СЂР°СЃРєРѕСЃР°РјРё, РєРі</th>
-                <th>Р§РµСЂРЅС‹Р№, РєРі</th>
-                <th>РћС†РёРЅРє., РєРі</th>
-                <th>Р”Р»РёРЅР°, Рј</th>
-                <th>РњР°СЃСЃР° 1 Рј, РєРі</th>
-                <th>Рљ-С‚ РёСЃРї.</th>
-                <th>РЎС‚РѕРёРјРѕСЃС‚СЊ, СЂСѓР±.</th>
+                <th>Линия</th>
+                <th>Профиль</th>
+                <th>Шаг, мм</th>
+                <th>Масса 1 п.м., кг</th>
+                <th>Масса / шаг, кг</th>
+                <th>Масса / здание, кг</th>
+                <th>С раскосами, кг</th>
+                <th>Черный, кг</th>
+                <th>Оцинк., кг</th>
+                <th>Длина, м</th>
+                <th>Масса 1 м, кг</th>
+                <th>К-т исп.</th>
+                <th>Стоимость, руб.</th>
               </tr>
             </thead>
             <tbody>
@@ -317,23 +317,23 @@ function renderPurlinSpecification(
 
   return (
     <div className="results-section">
-      <h3 className="results-section-title">РЎРџР•Р¦РР¤РРљРђР¦РРЇ РџР РћР“РћРќРћР’</h3>
+      <h3 className="results-section-title">СПЕЦИФИКАЦИЯ ПРОГОНОВ</h3>
 
       {!selectedCandidate ? (
-        <div className="results-empty">РџРѕРґС…РѕРґСЏС‰РёРµ РІР°СЂРёР°РЅС‚С‹ РґР»СЏ СЃРїРµС†РёС„РёРєР°С†РёРё РЅРµ РЅР°Р№РґРµРЅС‹.</div>
+        <div className="results-empty">Подходящие варианты для спецификации не найдены.</div>
       ) : (
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
-                <th>РўРёРї</th>
-                <th>РЎРµРјРµР№СЃС‚РІРѕ</th>
-                <th>РџСЂРѕС„РёР»СЊ</th>
-                <th>РЎС‚Р°Р»СЊ</th>
-                <th>РЁР°Рі, РјРј</th>
-                <th>РњР°СЃСЃР° 1 Рї.Рј., РєРі</th>
-                <th>РњР°СЃСЃР° РІСЃРµРіРѕ, РєРі</th>
-                <th>РЎС‚РѕРёРјРѕСЃС‚СЊ, СЂСѓР±</th>
+                <th>Тип</th>
+                <th>Семейство</th>
+                <th>Профиль</th>
+                <th>Сталь</th>
+                <th>Шаг, мм</th>
+                <th>Масса 1 п.м., кг</th>
+                <th>Масса всего, кг</th>
+                <th>Стоимость, руб</th>
               </tr>
             </thead>
             <tbody>
@@ -354,11 +354,11 @@ function renderPurlinSpecification(
 
       {selectedCandidate && (
         <div className="footer-note">
-          <strong>РС‚РѕРіРѕ РїРѕ РІСЃРµРј РїСЂРѕРіРѕРЅР°Рј: </strong>
+          <strong>Итого по всем прогонам: </strong>
           <span>
-            {`${formatNumber(totalPurlinCount, 0)} С€С‚., `}
-            {`${formatNumber(selectedCandidate.totalMassKg, 0)} РєРі, `}
-            {`${selectedCostRub === null ? '-' : `${formatRub(selectedCostRub)} СЂСѓР±.`}`}
+            {`${formatNumber(totalPurlinCount, 0)} шт., `}
+            {`${formatNumber(selectedCandidate.totalMassKg, 0)} кг, `}
+            {`${selectedCostRub === null ? '-' : `${formatRub(selectedCostRub)} руб.`}`}
           </span>
         </div>
       )}
@@ -388,12 +388,12 @@ function renderColumnCandidatesBlock(
           <h3 className="results-section-title" style={{ marginBottom: 0 }}>
             {group.title}
           </h3>
-          <span>РћРїС†РёРё: {candidates.length}</span>
+          <span>Опции: {candidates.length}</span>
         </div>
 
         <div className="selection-row">
           <label className="field" style={{ marginBottom: 0 }}>
-            <span className="field-label">Р’С‹Р±СЂР°РЅРЅС‹Р№ РїСЂРѕС„РёР»СЊ</span>
+            <span className="field-label">Выбранный профиль</span>
             <select
               className="field-select"
               value={selectedIndex}
@@ -411,23 +411,23 @@ function renderColumnCandidatesBlock(
 
         <div className="table-container">
           {candidates.length === 0 ? (
-            <div className="results-empty">РџРѕРґС…РѕРґСЏС‰РёРµ РІР°СЂРёР°РЅС‚С‹ РЅРµ РЅР°Р№РґРµРЅС‹ РґР»СЏ С‚РµРєСѓС‰РёС… РїР°СЂР°РјРµС‚СЂРѕРІ.</div>
+            <div className="results-empty">Подходящие варианты не найдены для текущих параметров.</div>
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>в„–</th>
-                  <th>Р Р°РЅРі</th>
-                  <th>РџСЂРѕС„РёР»СЊ</th>
-                  <th>РЎС‚Р°Р»СЊ</th>
-                  <th>РўРёРї РїСЂРѕС„РёР»СЏ</th>
-                  <th>Рљ-С‚ РёСЃРї</th>
-                  <th className="criterion-col">РџСЂРѕРІРµСЂРєР°</th>
-                  <th>РњР°СЃСЃР° 1 Рї.Рј., РєРі</th>
-                  <th>РњР°СЃСЃР° РІСЃРµРіРѕ, РєРі</th>
-                  <th>Р Р°СЃРїРѕСЂРєРё</th>
-                  <th>РЎ СЂР°СЃРїРѕСЂРєРѕР№, РєРі</th>
-                  <th>РЎС‚РѕРёРјРѕСЃС‚СЊ, СЂСѓР±</th>
+                  <th>в"–</th>
+                  <th>Ранг</th>
+                  <th>Профиль</th>
+                  <th>Сталь</th>
+                  <th>Тип профиля</th>
+                  <th>К-т исп.</th>
+                  <th className="criterion-col">Проверка</th>
+                  <th>Масса 1 п.м., кг</th>
+                  <th>Масса всего, кг</th>
+                  <th>Распорки</th>
+                  <th>С распоркой, кг</th>
+                  <th>Стоимость, руб</th>
                 </tr>
               </thead>
               <tbody>
@@ -437,7 +437,7 @@ function renderColumnCandidatesBlock(
 
                   return (
                     <tr key={`${candidate.profile}-${candidate.steelGrade}-${index}`}>
-                      <td>{index === selectedIndex ? 'в—Џ' : 'в—‹'}</td>
+                      <td>{index === selectedIndex ? '●' : '○'}</td>
                       <td>{index + 1}</td>
                       <td>{candidate.profile}</td>
                       <td>{candidate.steelGrade}</td>
@@ -473,15 +473,15 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
   if (nonEmptyGroups.length === 0) {
     return (
       <div className="results-section">
-        <h3 className="results-section-title">РЎРџР•Р¦РР¤РРљРђР¦РРЇ РљРћР›РћРќРќ</h3>
-        <div className="results-empty">РќРµРІРѕР·РјРѕР¶РЅРѕ СЃС„РѕСЂРјРёСЂРѕРІР°С‚СЊ СЃРїРµС†РёС„РёРєР°С†РёСЋ: РїРѕРґС…РѕРґСЏС‰РёРµ РїСЂРѕС„РёР»Рё РЅРµ РЅР°Р№РґРµРЅС‹.</div>
+        <h3 className="results-section-title">СПЕЦИФИКАЦИЯ КОЛОНН</h3>
+        <div className="results-empty">Невозможно сформировать спецификацию: подходящие профили не найдены.</div>
       </div>
     )
   }
 
   return (
     <div className="results-section">
-      <h3 className="results-section-title">РЎРџР•Р¦РР¤РРљРђР¦РРЇ РљРћР›РћРќРќ</h3>
+      <h3 className="results-section-title">СПЕЦИФИКАЦИЯ КОЛОНН</h3>
 
       {nonEmptyGroups.map((group) => (
         <div key={group.key} style={{ marginBottom: 16 }}>
@@ -490,15 +490,15 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>X, Рј</th>
-                  <th>Р”Р»РёРЅР°, Рј</th>
-                  <th>РџСЂРѕС„РёР»СЊ</th>
-                  <th>РЎС‚Р°Р»СЊ</th>
-                  <th>РњР°СЃСЃР° РµРґ., РєРі</th>
-                  <th>Р Р°СЃРїРѕСЂРѕРє</th>
-                  <th>Р’РµС‚РєР°, С€С‚</th>
-                  <th>РњР°СЃСЃР° РёС‚РѕРіРѕ, РєРі</th>
-                  <th>РЎС‚РѕРёРјРѕСЃС‚СЊ, СЂСѓР±</th>
+                  <th>X, м</th>
+                  <th>Длина, м</th>
+                  <th>Профиль</th>
+                  <th>Сталь</th>
+                  <th>Масса ед., кг</th>
+                  <th>Распорок</th>
+                  <th>Ветка, шт</th>
+                  <th>Масса итого, кг</th>
+                  <th>Стоимость, руб</th>
                 </tr>
               </thead>
               <tbody>
@@ -516,11 +516,11 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
                   </tr>
                 ))}
                 <tr>
-                  <td colSpan={5}>РС‚РѕРіРѕ РїРѕ РєРѕР»РѕРЅРЅР°Рј</td>
+                  <td colSpan={5}>Итого по колоннам</td>
                   <td>{group.bracesTotalCount}</td>
-                  <td>{`${group.columnsCount} С€С‚.`}</td>
-                  <td>{`${formatNumber(group.columnsMassKg, 0)} РєРі`}</td>
-                  <td>{`${formatRub(group.totalCostRub)} СЂСѓР±.`}</td>
+                  <td>{`${group.columnsCount} шт.`}</td>
+                  <td>{`${formatNumber(group.columnsMassKg, 0)} кг`}</td>
+                  <td>{`${formatRub(group.totalCostRub)} руб.`}</td>
                 </tr>
               </tbody>
             </table>
@@ -529,11 +529,11 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
       ))}
 
       <div className="footer-note">
-        <strong>РС‚РѕРіРѕ РїРѕ РІСЃРµРј РєРѕР»РѕРЅРЅР°Рј: </strong>
+        <strong>Итого по всем колоннам: </strong>
         <span>
-          {`${nonEmptyGroups.reduce((sum, group) => sum + group.columnsCount, 0)} С€С‚., `}
-          {`${formatNumber(columnResult.specification.totalMassKg, 0)} РєРі, `}
-          {`${formatRub(columnResult.specification.totalCostRub)} СЂСѓР±.`}
+          {`${nonEmptyGroups.reduce((sum, group) => sum + group.columnsCount, 0)} шт., `}
+          {`${formatNumber(columnResult.specification.totalMassKg, 0)} кг, `}
+          {`${formatRub(columnResult.specification.totalCostRub)} руб.`}
         </span>
       </div>
     </div>
@@ -566,136 +566,136 @@ function renderGeneralSpecificationOverview(
     columnResult?.specification.groups.reduce((sum, group) => sum + group.columnsCount, 0) ?? 0
   const selectedPurlinLabel = selectedCandidate
     ? `${formatPurlinFamilyLabel(selectedCandidate.family)} / ${selectedCandidate.profile}`
-    : 'РќРµ РІС‹Р±СЂР°РЅ'
+    : 'Не выбран'
   const snowRegionKpa = purlinResult?.loadSummary.snowRegionKpa
   const windRegionKpa = purlinResult?.loadSummary.windRegionKpa
   const roofCoveringNormalized = input.roofCoveringType.toLowerCase()
   const showRoofProfileSheet =
-    roofCoveringNormalized.includes('РїСЂРѕС„Р»РёСЃС‚') || roofCoveringNormalized.includes('РЅР°С€Рµ')
+    roofCoveringNormalized.includes('профлист') || roofCoveringNormalized.includes('наше')
 
   return (
     <div className="results-section results-section--summary-sheet">
       <div className="results-table-head results-table-head--summary">
         <div>
-          <h3 className="results-section-title">РћР±С‰РёРµ СЃРІРµРґРµРЅРёСЏ Рѕ СЂР°СЃС‡РµС‚Рµ</h3>
+          <h3 className="results-section-title">Общие сведения о расчете</h3>
           <p className="results-inline-note" style={{ marginTop: 6 }}>
-            РЎРІРѕРґРЅР°СЏ СЃРїРµС†РёС„РёРєР°С†РёСЏ Р·РґР°РЅРёСЏ РїРѕ С‚РµРєСѓС‰РёРј РІС‹Р±СЂР°РЅРЅС‹Рј СЂРµР¶РёРјР°Рј СЂР°СЃС‡РµС‚Р° РєРѕР»РѕРЅРЅ Рё РїСЂРѕРіРѕРЅРѕРІ.
+            Сводная спецификация здания по текущим выбранным режимам расчета колонн и прогонов.
           </p>
         </div>
         <button className="results-print-action" onClick={() => window.print()}>
-          РџРµС‡Р°С‚СЊ / PDF
+          Печать / PDF
         </button>
       </div>
 
       <div className="summary-hero">
         <div className="summary-metric-card summary-metric-card--accent">
-          <span>РћР±С‰Р°СЏ РјР°СЃСЃР° Р·РґР°РЅРёСЏ</span>
-          <strong>{formatNumber(combinedMassKg, 0)} РєРі</strong>
+          <span>Общая масса здания</span>
+          <strong>{formatNumber(combinedMassKg, 0)} кг</strong>
         </div>
         <div className="summary-metric-card">
-          <span>РћСЂРёРµРЅС‚РёСЂРѕРІРѕС‡РЅР°СЏ СЃС‚РѕРёРјРѕСЃС‚СЊ</span>
-          <strong>{formatRub(combinedCostRub)} СЂСѓР±.</strong>
+          <span>Ориентировочная стоимость</span>
+          <strong>{formatRub(combinedCostRub)} руб.</strong>
         </div>
         <div className="summary-metric-card">
-          <span>РљРѕР»РѕРЅРЅ / РїСЂРѕРіРѕРЅРѕРІ</span>
-          <strong>{`${combinedColumnsCount} С€С‚. / ${selectedCandidate ? '1 С‚РёРї' : 'вЂ”'}`}</strong>
+          <span>Колонн / прогонов</span>
+          <strong>{`${combinedColumnsCount} шт. / ${selectedCandidate ? '1 тип' : '—'}`}</strong>
         </div>
         <div className="summary-metric-card">
-          <span>Р’С‹Р±СЂР°РЅРЅС‹Р№ РїСЂРѕРіРѕРЅ</span>
+          <span>Выбранный прогон</span>
           <strong>{selectedPurlinLabel}</strong>
         </div>
       </div>
 
       <div className="load-grid load-grid--summary">
         <div className="load-tile">
-          <span>Р“РѕСЂРѕРґ</span>
+          <span>Город</span>
           <strong>{input.city}</strong>
         </div>
         <div className="load-tile">
-          <span>РљСЂРѕРІР»СЏ</span>
+          <span>Кровля</span>
           <strong>{input.roofType}</strong>
         </div>
         <div className="load-tile">
-          <span>РўРёРї РјРµСЃС‚РЅРѕСЃС‚Рё</span>
+          <span>Тип местности</span>
           <strong>{input.terrainType}</strong>
         </div>
         <div className="load-tile">
-          <span>РЁРёСЂРёРЅР°, Рј x Р”Р»РёРЅР°, Рј x Р’С‹СЃРѕС‚Р°, Рј</span>
+          <span>Ширина, м x Длина, м x Высота, м</span>
           <strong>
             {`${formatNumber(input.spanM, 2)} x ${formatNumber(input.buildingLengthM, 2)} x ${formatNumber(input.buildingHeightM, 2)}`}
           </strong>
         </div>
         <div className="load-tile">
-          <span>РЈРєР»РѕРЅ РєСЂРѕРІР»Рё</span>
-          <strong>{`${formatNumber(input.roofSlopeDeg, 1)}В°`}</strong>
+          <span>Уклон кровли</span>
+          <strong>{`${formatNumber(input.roofSlopeDeg, 1)}°`}</strong>
         </div>
         <div className="load-tile">
-          <span>РЁР°Рі СЂР°Рј x С„Р°С…РІРµСЂРє</span>
-          <strong>{`${formatNumber(input.frameStepM, 2)} Рј / ${formatNumber(input.fakhverkStepM, 2)} Рј`}</strong>
+          <span>Шаг рам x фахверк</span>
+          <strong>{`${formatNumber(input.frameStepM, 2)} м / ${formatNumber(input.fakhverkStepM, 2)} м`}</strong>
         </div>
         <div className="load-tile">
-          <span>РџРѕРєСЂС‹С‚РёРµ</span>
+          <span>Покрытие</span>
           <strong>{input.roofCoveringType}</strong>
         </div>
         <div className="load-tile">
-          <span>РћРіСЂР°Р¶РґРµРЅРёРµ СЃС‚РµРЅ</span>
+          <span>Ограждение стен</span>
           <strong>{input.wallCoveringType}</strong>
         </div>
         {showRoofProfileSheet && (
           <div className="load-tile">
-            <span>РџСЂРѕС„Р»РёСЃС‚ РєСЂРѕРІР»Рё</span>
+            <span>Профлист кровли</span>
             <strong>{input.profileSheet}</strong>
           </div>
         )}
         <div className="load-tile">
-          <span>РЎРЅРµРіРѕРІРѕР№ РјРµС€РѕРє</span>
+          <span>Снеговой мешок</span>
           <strong>{input.snowBagMode}</strong>
         </div>
         <div className="load-tile">
-          <span>РЎРЅРµРіРѕРІРѕР№ СЂР°Р№РѕРЅ</span>
+          <span>Снеговой район</span>
           <strong>{resolveSnowRegionLabel(snowRegionKpa)}</strong>
         </div>
         <div className="load-tile">
-          <span>Р’РµС‚СЂРѕРІРѕР№ СЂР°Р№РѕРЅ</span>
+          <span>Ветровой район</span>
           <strong>{resolveWindRegionLabel(windRegionKpa)}</strong>
         </div>
         <div className="load-tile">
-          <span>РЎРЅРµРіРѕРІР°СЏ РЅР°РіСЂСѓР·РєР°</span>
-          <strong>{snowRegionKpa !== undefined ? `${formatNumber(snowRegionKpa, 2)} РєРџР°` : '-'}</strong>
+          <span>Снеговая нагрузка</span>
+          <strong>{snowRegionKpa !== undefined ? `${formatNumber(snowRegionKpa, 2)} кПа` : '-'}</strong>
         </div>
         <div className="load-tile">
-          <span>Р’РµС‚СЂРѕРІР°СЏ РЅР°РіСЂСѓР·РєР°</span>
-          <strong>{windRegionKpa !== undefined ? `${formatNumber(windRegionKpa, 2)} РєРџР°` : '-'}</strong>
+          <span>Ветровая нагрузка</span>
+          <strong>{windRegionKpa !== undefined ? `${formatNumber(windRegionKpa, 2)} кПа` : '-'}</strong>
         </div>
         <div className="load-tile">
-          <span>РџРѕРґР±РѕСЂ РєРѕР»РѕРЅРЅ</span>
-          <strong>РРЅР¶РµРЅРµСЂРЅС‹Р№ (H_max)</strong>
+          <span>Подбор колонн</span>
+          <strong>Инженерный (H_max)</strong>
         </div>
         <div className="load-tile">
-          <span>Р’С‹Р±РѕСЂ РєРѕР»РѕРЅРЅ</span>
-          <strong>{isColumnManualMode ? 'Р СѓС‡РЅРѕР№' : 'РђРІС‚Рѕ'}</strong>
+          <span>Выбор колонн</span>
+          <strong>{isColumnManualMode ? 'Ручной' : 'Авто'}</strong>
         </div>
         <div className="load-tile">
-          <span>РСЃС‚РѕС‡РЅРёРє РїСЂРѕРіРѕРЅРѕРІ</span>
-          <strong>{purlinSpecificationSource === 'sort' ? 'РЎРѕСЂС‚РѕРІРѕР№' : 'Р›РЎРўРљ'}</strong>
+          <span>Источник прогонов</span>
+          <strong>{purlinSpecificationSource === 'sort' ? 'Сортовой' : 'ЛСТК'}</strong>
         </div>
         <div className="load-tile">
-          <span>Р’С‹Р±РѕСЂ РїСЂРѕРіРѕРЅРѕРІ</span>
-          <strong>{purlinSelectionMode === 'manual' ? 'Р СѓС‡РЅРѕР№' : 'РђРІС‚Рѕ'}</strong>
+          <span>Выбор прогонов</span>
+          <strong>{purlinSelectionMode === 'manual' ? 'Ручной' : 'Авто'}</strong>
         </div>
         <div className="load-tile">
-          <span>РЎСѓРјРјР° РєРѕР»РѕРЅРЅ, РєРі</span>
+          <span>Сумма колонн, кг</span>
           <strong>{columnResult ? formatNumber(columnResult.specification.totalMassKg, 0) : '-'}</strong>
         </div>
         <div className="load-tile">
-          <span>РЎСѓРјРјР° РїСЂРѕРіРѕРЅРѕРІ, РєРі</span>
+          <span>Сумма прогонов, кг</span>
           <strong>{selectedCandidate ? formatNumber(selectedCandidate.totalMassKg, 0) : '-'}</strong>
         </div>
         <div className="load-tile load-tile--total">
-          <span>РћР±С‰Р°СЏ РјР°СЃСЃР° / СЃС‚РѕРёРјРѕСЃС‚СЊ</span>
+          <span>Общая масса / стоимость</span>
           <strong>
             {columnResult || selectedCandidate
-              ? `${formatNumber(combinedMassKg, 0)} РєРі / ${formatRub(combinedCostRub)} СЂСѓР±.`
+              ? `${formatNumber(combinedMassKg, 0)} кг / ${formatRub(combinedCostRub)} руб.`
               : '-'}
           </strong>
         </div>
@@ -1067,15 +1067,15 @@ export function ResultsPanel({
   const activeErrors =
     activeTab === 'summary' || activeTab === 'enclosing' || activeTab === 'methodology'
       ? [
-          { scope: 'РџСЂРѕРіРѕРЅС‹', message: purlinError },
-          { scope: 'РљРѕР»РѕРЅРЅС‹', message: columnError },
+          { scope: 'Прогоны', message: purlinError },
+          { scope: 'Колонны', message: columnError },
         ].filter((item): item is { scope: string; message: string } => Boolean(item.message))
       : activeTab === 'purlin'
         ? purlinError
-          ? [{ scope: 'РџСЂРѕРіРѕРЅС‹', message: purlinError }]
+          ? [{ scope: 'Прогоны', message: purlinError }]
           : []
         : columnError
-          ? [{ scope: 'РљРѕР»РѕРЅРЅС‹', message: columnError }]
+          ? [{ scope: 'Колонны', message: columnError }]
           : []
   const sortPurlinCandidates = filterAvailableCandidates(purlinResult?.sortSteelTop10 ?? [])
   const lstkPurlinCandidates = filterAvailableCandidates([
@@ -1092,7 +1092,7 @@ export function ResultsPanel({
     <div className={`results-panel ${isPending ? 'pending' : ''}`}>
       {activeErrors.length > 0 && (
         <div className="results-error">
-          <h4 style={{ margin: '0 0 8px' }}>РћС€РёР±РєР° СЂР°СЃС‡РµС‚Р°</h4>
+          <h4 style={{ margin: '0 0 8px' }}>Ошибка расчета</h4>
           {activeErrors.map((item) => (
             <p key={item.scope} style={{ margin: '0 0 6px' }}>
               <strong>{item.scope}: </strong>
@@ -1130,22 +1130,22 @@ export function ResultsPanel({
       ) : activeTab === 'purlin' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">
-            <h3 className="results-section-title">РќР°РіСЂСѓР·РєРё Рё СЂР°СЃС‡РµС‚РЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹</h3>
+            <h3 className="results-section-title">Нагрузки и расчетные параметры</h3>
             <div className="load-grid load-grid--purlin">
               <div className="load-tile">
-                <span>РЎРЅРµРі СЂР°Р№РѕРЅ, РєРџР°</span>
+                <span>Снег район, кПа</span>
                 <strong>{purlinResult?.loadSummary?.snowRegionKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>Р’РµС‚РµСЂ СЂР°Р№РѕРЅ, РєРџР°</span>
+                <span>Ветер район, кПа</span>
                 <strong>{purlinResult?.loadSummary?.windRegionKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>РџРѕРєСЂС‹С‚РёРµ, РєРџР°</span>
+                <span>Покрытие, кПа</span>
                 <strong>{purlinResult?.loadSummary?.coveringKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>РљРѕСЌС„. СЃРЅРµРі. РјРµС€РєР°</span>
+                <span>Коэф. снег. мешка</span>
                 <strong>
                   {purlinResult?.loadSummary?.snowBagFactor !== undefined
                     ? purlinResult.loadSummary.snowBagFactor.toFixed(2)
@@ -1153,27 +1153,27 @@ export function ResultsPanel({
                 </strong>
               </div>
               <div className="load-tile">
-                <span>РЎРЅРµРі СЂР°СЃС‡РµС‚, РєРџР°</span>
+                <span>Снег расчет, кПа</span>
                 <strong>{purlinResult?.loadSummary?.designSnowKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>Р’РµС‚РµСЂ РєСЂРѕРІР»СЏ, РєРџР°</span>
+                <span>Ветер кровля, кПа</span>
                 <strong>{purlinResult?.loadSummary?.windRoofKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>Р’РµС‚РµСЂ С„Р°СЃР°Рґ, РєРџР°</span>
+                <span>Ветер фасад, кПа</span>
                 <strong>{purlinResult?.loadSummary?.windFacadeKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>Р­РєСЃРїР». РЅР°РіСЂСѓР·РєР°, РєРџР°</span>
+                <span>Экспл. нагрузка, кПа</span>
                 <strong>{purlinResult?.loadSummary?.serviceKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile load-tile--total">
-                <span>РЎСѓРјРјР°СЂРЅР°СЏ СЂР°СЃС‡., РєРџР°</span>
+                <span>Суммарная расч., кПа</span>
                 <strong>{purlinResult?.loadSummary?.designTotalKpa.toFixed(2) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>РђРІС‚Рѕ С€Р°Рі, РјРј</span>
+                <span>Авто шаг, мм</span>
                 <strong>
                   {purlinResult?.loadSummary?.autoMaxStepMm !== undefined
                     ? formatStepLimitMm(purlinResult.loadSummary.autoMaxStepMm)
@@ -1181,18 +1181,18 @@ export function ResultsPanel({
                 </strong>
               </div>
               <div className="load-tile">
-                <span>РњРёРЅ. С€Р°Рі СЂСѓС‡РЅРѕР№, РјРј</span>
+                <span>Мин. шаг ручной, мм</span>
                 <strong>
                   {purlinResult?.loadSummary?.manualMinStepMm !== undefined
-                    ? formatStepLimitMm(purlinResult.loadSummary.manualMinStepMm, 'РЅРµ Р·Р°РґР°РЅ')
+                    ? formatStepLimitMm(purlinResult.loadSummary.manualMinStepMm, 'не задан')
                     : '-'}
                 </strong>
               </div>
               <div className="load-tile">
-                <span>РњР°РєСЃ. С€Р°Рі СЂСѓС‡РЅРѕР№, РјРј</span>
+                <span>Макс. шаг ручной, мм</span>
                 <strong>
                   {purlinResult?.loadSummary?.manualMaxStepMm !== undefined
-                    ? formatStepLimitMm(purlinResult.loadSummary.manualMaxStepMm, 'РЅРµ Р·Р°РґР°РЅ')
+                    ? formatStepLimitMm(purlinResult.loadSummary.manualMaxStepMm, 'не задан')
                     : '-'}
                 </strong>
               </div>
@@ -1201,44 +1201,44 @@ export function ResultsPanel({
 
           <div className="results-section-row">
             <div className="results-section">
-              <h3 className="results-section-title">РСЃС‚РѕС‡РЅРёРє СЃРїРµС†РёС„РёРєР°С†РёРё РїСЂРѕРіРѕРЅРѕРІ</h3>
+              <h3 className="results-section-title">Источник спецификации прогонов</h3>
               <div className="mode-toggle">
                 <button
                   className={`mode-button ${purlinSpecificationSource === 'sort' ? 'active' : ''}`}
                   onClick={() => onPurlinSpecificationSourceChange('sort')}
                 >
-                  РЎРѕСЂС‚РѕРІРѕР№
+                  Сортовой
                 </button>
                 <button
                   className={`mode-button ${purlinSpecificationSource === 'lstk' ? 'active' : ''}`}
                   onClick={() => onPurlinSpecificationSourceChange('lstk')}
                 >
-                  Р›РЎРўРљ
+                  ЛСТК
                 </button>
               </div>
             </div>
 
             <div className="results-section">
-              <h3 className="results-section-title">Р РµР¶РёРј РІС‹Р±РѕСЂР° РїСЂРѕС„РёР»СЏ РїСЂРѕРіРѕРЅР°</h3>
+              <h3 className="results-section-title">Режим выбора профиля прогона</h3>
               <div className="mode-toggle">
                 <button
                   className={`mode-button ${purlinSelectionMode === 'auto' ? 'active' : ''}`}
                   onClick={() => onPurlinSelectionModeChange('auto')}
                 >
-                  РђРІС‚Рѕ
+                  Авто
                 </button>
                 <button
                   className={`mode-button ${purlinSelectionMode === 'manual' ? 'active' : ''}`}
                   onClick={() => onPurlinSelectionModeChange('manual')}
                 >
-                  Р СѓС‡РЅРѕР№ РІС‹Р±РѕСЂ
+                  Ручной выбор
                 </button>
               </div>
 
               {purlinSelectionMode === 'manual' && (
                 <div className="selection-row" style={{ marginTop: 10 }}>
                   <label className="field" style={{ marginBottom: 0 }}>
-                    <span className="field-label">РџСЂРѕС„РёР»СЊ РґР»СЏ СЃРїРµС†РёС„РёРєР°С†РёРё</span>
+                    <span className="field-label">Профиль для спецификации</span>
                     <select
                       className="field-select"
                       value={manualPurlinSelectedIndex}
@@ -1264,9 +1264,9 @@ export function ResultsPanel({
             </div>
           </div>
 
-          {renderPurlinCandidatesTable('РЎРѕСЂС‚РѕРІРѕР№ РїСЂРѕРєР°С‚ вЂ” РўРѕРї 10', purlinResult?.sortSteelTop10 ?? [], 10)}
-          {renderPurlinCandidatesTable('Р›РЎРўРљ РњРџ350', purlinResult?.lstkMp350Top ?? [], 5)}
-          {renderPurlinCandidatesTable('Р›РЎРўРљ РњРџ390', purlinResult?.lstkMp390Top ?? [], 5)}
+          {renderPurlinCandidatesTable('Сортовой прокат — Топ 10', purlinResult?.sortSteelTop10 ?? [], 10)}
+          {renderPurlinCandidatesTable('ЛСТК МП350', purlinResult?.lstkMp350Top ?? [], 5)}
+          {renderPurlinCandidatesTable('ЛСТК МП390', purlinResult?.lstkMp390Top ?? [], 5)}
           {renderPurlinSpecification(
             purlinResult,
             purlinSpecificationSource,
@@ -1278,14 +1278,14 @@ export function ResultsPanel({
       ) : (
         <div className="tab-pane animate-in">
           <div className="results-section">
-            <h3 className="results-section-title">Р Р°СЃС‡РµС‚РЅС‹Рµ СѓСЃРёР»РёСЏ</h3>
+            <h3 className="results-section-title">Расчетные усилия</h3>
             <div className="load-grid">
               <div className="load-tile">
-                <span>РћСЃРµРІР°СЏ N (РєРќ)</span>
+                <span>Осевая N (кН)</span>
                 <strong>{columnResult?.derivedContext?.axialLoadKn?.toFixed(1) ?? '-'}</strong>
               </div>
               <div className="load-tile">
-                <span>РњРѕРјРµРЅС‚ M (РєРќВ·Рј)</span>
+                <span>Момент M (кН·м)</span>
                 <strong>{columnResult?.derivedContext?.bendingMomentKnM?.toFixed(1) ?? '-'}</strong>
               </div>
             </div>
@@ -1293,32 +1293,32 @@ export function ResultsPanel({
 
           <div className="results-section-row">
             <div className="results-section">
-              <h3 className="results-section-title">Р РµР¶РёРј РїРѕРґР±РѕСЂР° РєРѕР»РѕРЅРЅ</h3>
+              <h3 className="results-section-title">Режим подбора колонн</h3>
               <div className="mode-toggle">
                 <button
                   className="mode-button active"
                   disabled
                 >
-                  РРЅР¶РµРЅРµСЂРЅС‹Р№ (H_max)
+                  Инженерный (H_max)
                 </button>
               </div>
-              <p className="results-inline-note">РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РјР°РєСЃРёРјР°Р»СЊРЅР°СЏ СЂР°СЃС‡РµС‚РЅР°СЏ РґР»РёРЅР° РІ РіСЂСѓРїРїРµ.</p>
+              <p className="results-inline-note">Используется максимальная расчетная длина в группе.</p>
             </div>
 
             <div className="results-section">
-              <h3 className="results-section-title">Р РµР¶РёРј РІС‹Р±РѕСЂР° РїСЂРѕС„РёР»СЏ</h3>
+              <h3 className="results-section-title">Режим выбора профиля</h3>
               <div className="mode-toggle">
                 <button
                   className={`mode-button ${!isColumnManualMode ? 'active' : ''}`}
                   onClick={() => onColumnManualModeChange(false)}
                 >
-                  РђРІС‚Рѕ
+                  Авто
                 </button>
                 <button
                   className={`mode-button ${isColumnManualMode ? 'active' : ''}`}
                   onClick={() => onColumnManualModeChange(true)}
                 >
-                  Р СѓС‡РЅРѕР№ РІС‹Р±РѕСЂ
+                  Ручной выбор
                 </button>
               </div>
             </div>
@@ -1331,4 +1331,3 @@ export function ResultsPanel({
     </div>
   )
 }
-

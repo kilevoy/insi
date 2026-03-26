@@ -1,4 +1,4 @@
-﻿import { useRef } from 'react'
+import { useRef } from 'react'
 import type { ColumnCalculationResult } from '@/domain/column/model/calculate-column'
 import type { PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
 import type { UnifiedInputState } from '../model/unified-input'

@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { calculatePurlin } from '@/domain/purlin/model/calculate-purlin'
 import { defaultPurlinInput, type PurlinInput } from '@/domain/purlin/model/purlin-input'
 import {

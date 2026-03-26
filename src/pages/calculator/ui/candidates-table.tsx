@@ -14,7 +14,7 @@ export function CandidatesTable({ title, candidates, limit, selectedIndex }: Can
     return (
       <div className="candidates-section">
         {title && <h3 className="results-section-title">{title}</h3>}
-        <div className="results-empty">РќРµС‚ РїРѕРґС…РѕРґСЏС‰РёС… РїСЂРѕС„РёР»РµР№ РґР»СЏ Р·Р°РґР°РЅРЅС‹С… РЅР°РіСЂСѓР·РѕРє</div>
+        <div className="results-empty">Нет подходящих профилей для заданных нагрузок</div>
       </div>
     )
   }
@@ -46,14 +46,14 @@ export function CandidatesTable({ title, candidates, limit, selectedIndex }: Can
                   <div className="candidate-stats">
                     {candidate.priceTonRub !== undefined && candidate.priceTonRub > 0 && (
                       <div className="candidate-stat">
-                        <span className="stat-label">Р¦РµРЅР°/С‚</span>
-                        <strong>{Math.round(candidate.priceTonRub).toLocaleString('ru-RU')} в‚Ѕ</strong>
+                        <span className="stat-label">Цена/т</span>
+                        <strong>{Math.round(candidate.priceTonRub).toLocaleString('ru-RU')} в'Ѕ</strong>
                       </div>
                     )}
 
                     {candidate.utilization > 0 && (
                       <div className="candidate-stat">
-                        <span className="stat-label">РСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ</span>
+                        <span className="stat-label">Использование</span>
                         <div className="utilization-mini-bar">
                           <div
                             className="utilization-fill"
@@ -71,22 +71,22 @@ export function CandidatesTable({ title, candidates, limit, selectedIndex }: Can
 
                     {candidate.stepMm !== undefined && candidate.stepMm > 0 && (
                       <div className="candidate-stat">
-                        <span className="stat-label">РЁР°Рі</span>
-                        <strong>{candidate.stepMm} РјРј</strong>
+                        <span className="stat-label">Шаг</span>
+                        <strong>{candidate.stepMm} мм</strong>
                       </div>
                     )}
 
                     {candidate.totalMassKg > 0 && (
                       <div className="candidate-stat">
-                        <span className="stat-label">РњР°СЃСЃР°</span>
-                        <strong>{Math.round(candidate.totalMassKg).toLocaleString('ru-RU')} РєРі</strong>
+                        <span className="stat-label">Масса</span>
+                        <strong>{Math.round(candidate.totalMassKg).toLocaleString('ru-RU')} кг</strong>
                       </div>
                     )}
 
                     {candidate.estimatedCostRub !== undefined && candidate.estimatedCostRub > 0 && (
                       <div className="candidate-stat">
-                        <span className="stat-label">Р¦РµРЅР°</span>
-                        <strong>{Math.round(candidate.estimatedCostRub).toLocaleString('ru-RU')} в‚Ѕ</strong>
+                        <span className="stat-label">Цена</span>
+                        <strong>{Math.round(candidate.estimatedCostRub).toLocaleString('ru-RU')} в'Ѕ</strong>
                       </div>
                     )}
                   </div>
