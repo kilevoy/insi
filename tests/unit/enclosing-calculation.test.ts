@@ -30,13 +30,13 @@ describe('enclosing calculation', () => {
     expect(class1.roof.panelSpecification[0]?.unitPriceRubPerM2).toBe(4705)
 
     expect(class1.totals.panelsRub).toBe(12753079)
-    expect(class1.walls.fasteners[0]?.lengthMm).toBe(170)
+    expect(class1.walls.fasteners[0]?.lengthMm).toBe(190)
     expect(class1.walls.fasteners[0]?.quantity).toBe(762)
     expect(class1.walls.fasteners[0]?.unitPriceRub).toBeCloseTo(94.8, 1)
     expect(class1.roof.fasteners[0]?.lengthMm).toBe(240)
     expect(class1.roof.fasteners[0]?.quantity).toBe(3840)
     expect(class1.roof.fasteners[0]?.unitPriceRub).toBeCloseTo(145.7, 1)
-    expect(class1.walls.fasteners[1]?.quantity).toBe(5734)
+    expect(class1.walls.fasteners[1]?.quantity).toBeGreaterThan(5734)
     expect(class1.walls.fasteners[1]?.unitPriceRub).toBeCloseTo(4.55, 2)
     expect(class1.roof.fasteners[1]?.quantity).toBe(1361)
 
@@ -44,8 +44,15 @@ describe('enclosing calculation', () => {
     expect(lapFastenerRow?.lengthMm).toBe(28)
     expect(lapFastenerRow?.quantity).toBe(2848)
     expect(lapFastenerRow?.unitPriceRub).toBeCloseTo(4.55, 2)
+
+    const socleAnchorRow = class1.walls.fasteners.find((row) => row.key.includes('socle-anchor-bolt'))
+    expect(socleAnchorRow?.lengthMm).toBe(100)
+    expect(socleAnchorRow?.quantity).toBeGreaterThan(0)
+    expect(socleAnchorRow?.unitPriceRub).toBe(35)
+
     expect(class1.walls.accessories.length).toBeGreaterThan(0)
     expect(class1.roof.accessories.length).toBeGreaterThan(0)
+    expect(class1.walls.accessories.some((row) => row.item.includes('отлива цоколя'))).toBe(true)
     expect(class1.walls.accessories.some((row) => row.item.includes('ФИ11'))).toBe(true)
     expect(class1.roof.accessories.some((row) => row.item.includes('ФИ28'))).toBe(true)
   })

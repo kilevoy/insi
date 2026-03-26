@@ -33,6 +33,9 @@ const HARPOON_PANEL_FASTENER_PRICE_RUB_BY_LENGTH_MM: Record<number, number> = {
 }
 const ACCESSORY_FASTENER_PRICE_RUB = 4.55
 const ACCESSORY_FASTENER_LENGTH_MM = 28
+const SOCLE_ANCHOR_BOLT_LENGTH_MM = 100
+const SOCLE_ANCHOR_BOLT_PRICE_RUB = 35
+const SOCLE_ANCHOR_STEP_M = 0.6
 const LOCK_GASKET_PACK_LENGTH_M = 30
 const LOCK_GASKET_PACK_PRICE_RUB = 90
 const ROOF_PROFILE_GASKET_PIECE_LENGTH_M = 1
@@ -90,6 +93,9 @@ const WALL_STARTER_FIU6_DEV_WIDTH_M_BY_THICKNESS: Record<number, number> = {
   250: 0.311,
 }
 const WALL_STARTER_FIU6_THICKNESS_MM = 2.0
+const WALL_SOCLE_DRIP_DEV_WIDTH_M = 0.07
+const WALL_SOCLE_DRIP_LENGTH_M = 2
+const WALL_SOCLE_DRIP_PRICE_RUB_PER_PIECE = 765
 
 const ROOF_RIDGE_FI28_DEV_WIDTH_M = 0.416
 const ROOF_RIDGE_FI29_DEV_WIDTH_M = 0.178
@@ -420,7 +426,7 @@ function buildSectionSpecification(params: {
           : 'Самонарезающий винт с ЭПДМ-прокладкой для МП ТСП-К (по АТР ТСП)',
       unit: 'шт',
       quantity: params.panelFastenerQuantity,
-      lengthMm: panelFastener.lengthMm,
+      lengthMm: panelFastenerPrice.resolvedLengthMm,
       unitPriceRub: panelFastenerPrice.unitPriceRub,
       totalRub: roundRub(params.panelFastenerQuantity * panelFastenerPrice.unitPriceRub),
       note: 'Количество и длина подбираются по АТР/техкаталогу ТСП; цена по прайсу №12.4 (Гарпун).',
@@ -506,6 +512,14 @@ function buildClassSpecification(params: {
       4 * params.input.buildingHeightM,
       resolveDevelopedWidthByThickness(WALL_OUTER_CORNER_FI10_DEV_WIDTH_M_BY_THICKNESS, params.input.wallPanelThicknessMm),
       params.derivedAccessoryPriceRubPerM2,
+    ),
+    calcAccessoryRow(
+      `${params.classKey}-walls-socle-drip`,
+      'walls',
+      'Планка отлива цоколя 50х20х2000 (прайс №3.5)',
+      perimeterM,
+      WALL_SOCLE_DRIP_DEV_WIDTH_M,
+      WALL_SOCLE_DRIP_PRICE_RUB_PER_PIECE / (WALL_SOCLE_DRIP_LENGTH_M * WALL_SOCLE_DRIP_DEV_WIDTH_M),
     ),
   ].filter((row): row is EnclosingAccessoryRow => row !== null)
 
@@ -605,6 +619,23 @@ function buildClassSpecification(params: {
 
   const wallPanelFastenerQuantity = wallPanelsCount * WALL_PANEL_FASTENERS_PER_PANEL
   const wallAccessoryFastenerQuantity = Math.ceil(wallAccessoryLengthM / FACADE_FASTENER_STEP_M)
+  const wallSocleAnchorQuantity = Math.ceil(perimeterM / SOCLE_ANCHOR_STEP_M)
+  const wallExtraFastenerRows: EnclosingFastenerRow[] =
+    wallSocleAnchorQuantity > 0
+      ? [
+          {
+            key: `${params.classKey}-walls-socle-anchor-bolt`,
+            section: 'walls',
+            item: 'Анкерный болт 10х100 для крепления опорного элемента/отлива цоколя',
+            unit: 'шт',
+            quantity: wallSocleAnchorQuantity,
+            lengthMm: SOCLE_ANCHOR_BOLT_LENGTH_MM,
+            unitPriceRub: SOCLE_ANCHOR_BOLT_PRICE_RUB,
+            totalRub: roundRub(wallSocleAnchorQuantity * SOCLE_ANCHOR_BOLT_PRICE_RUB),
+            note: 'Шаг 600 мм по узлам АТР ТСП; цена по прайсу анкеров.',
+          },
+        ]
+      : []
 
   const roofPanelsCount = calcPanelsCount(params.roofAreaM2, params.roofPanelLengthM, PANEL_WORKING_WIDTH_M)
   const roofSupportLinesPerPanel = calcRoofSupportLinesPerPanel(params.roofPanelLengthM, params.roofPurlinStepM)
@@ -654,6 +685,7 @@ function buildClassSpecification(params: {
     panelFastenerLengthByThicknessMm: WALL_FASTENER_LENGTH_MM_BY_THICKNESS_ATR,
     panelFastenerQuantity: wallPanelFastenerQuantity,
     accessoryFastenerQuantity: wallAccessoryFastenerQuantity,
+    extraFastenerRows: wallExtraFastenerRows,
     notes: params.notes,
   })
 
@@ -715,13 +747,14 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
     `Accessories are calculated by price formula: flat sheet price x ${enclosingAccessoriesReference.flatSheetMultiplier} (base ${ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2} RUB/m2).`,
     'Accessories are priced per m2 according to the TSP price formula.',
     'Sealants are added from price list №12.5 (lock gasket and roof profile gaskets).',
-    'Wall accessories include only panel joints and outer corners (no openings considered).',
+    'Wall accessories include panel joints, outer corners and socle drip (no openings considered).',
     'Fastener lengths for MP ТСП-Z and MP ТСП-К are selected strictly by ATR recommendations.',
     'Wall panel fasteners: 3 pcs per panel row (Техкаталог ТСП, п.7.7.3).',
     `Accessory fasteners: step 300 mm (узлы АТР ТСП), equivalent to ceil(L/0.3).`,
+    'Socle anchor bolts: step 600 mm for fixing socle support/drip to base (АТР ТСП узлы).',
     `Roof panel-to-purlin fasteners: 500 mm across panel width + 250 mm at eave line, with purlin step ${input.roofPurlinStepM.toFixed(2)} m (Техкаталог ТСП, п.7.9.9).`,
     `Roof lap fasteners: step <=500 mm along overlap rib (Техкаталог ТСП, п.7.9.11).`,
-    'Fastener prices use price list №12.4 (Harpoon for sandwich panels) and price list №7 (4.8x28 ROOFRetail for accessories). If exact screw length is absent in price list, the next larger available length is used.',
+    'Fastener prices use price list №12.4 (Harpoon for sandwich panels) and price list №7 (4.8x28 ROOFRetail for accessories). If exact screw length is absent in price list, the next larger available length is used in specification.',
     'Wall panel working width is fixed at 1000 mm.',
     `Wall panels are assumed to be mounted horizontally; panel length is taken as frame step (${input.frameStepM} m).`,
   ]
