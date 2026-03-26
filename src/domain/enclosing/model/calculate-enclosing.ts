@@ -785,21 +785,21 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
     pricing.accessoryBaseFlatSheetPriceRubPerM2 * enclosingAccessoriesReference.flatSheetMultiplier
 
   const notes: string[] = [
-    'Panel quantities are calculated by an enlarged layout scheme.',
-    `Accessories are calculated by price formula: flat sheet price x ${enclosingAccessoriesReference.flatSheetMultiplier} (base ${pricing.accessoryBaseFlatSheetPriceRubPerM2.toFixed(2)} RUB/m2).`,
-    `Starter strip ФИУ6хA uses flat sheet t=2.0 mm price (${pricing.starterBaseFlatSheet2mmPriceRubPerM2.toFixed(2)} RUB/m2) x ${enclosingAccessoriesReference.flatSheetMultiplier}.`,
-    'Accessories are priced per m2 according to the TSP price formula.',
-    'Sealants are added from price list №12.5 (lock gasket and roof profile gaskets).',
-    'Wall accessories include panel joints, outer corners and socle drip (no openings considered).',
-    'Fastener lengths for MP ТСП-Z and MP ТСП-К are selected strictly by ATR recommendations.',
-    'Wall panel fasteners: 3 pcs per panel row (Техкаталог ТСП, п.7.7.3).',
-    `Accessory fasteners: step 300 mm (узлы АТР ТСП), equivalent to ceil(L/0.3).`,
-    'Socle anchor bolts: step 600 mm for fixing socle support/drip to base (АТР ТСП узлы).',
-    `Roof panel-to-purlin fasteners: 500 mm across panel width + 250 mm at eave line, with purlin step ${input.roofPurlinStepM.toFixed(2)} m (Техкаталог ТСП, п.7.9.9).`,
-    `Roof lap fasteners: step <=500 mm along overlap rib (Техкаталог ТСП, п.7.9.11).`,
-    'Fastener prices use price list №12.4 (Harpoon for sandwich panels) and price list №7 (4.8x28 ROOFRetail for accessories). If exact screw length is absent in price list, the next larger available length is used in specification.',
-    'Wall panel working width is fixed at 1000 mm.',
-    `Wall panels are assumed to be mounted horizontally; panel length is taken as frame step (${input.frameStepM} m).`,
+    'Количество панелей рассчитывается по укрупненной схеме раскладки.',
+    `Доборные элементы рассчитываются по формуле прайса: цена плоского листа x ${enclosingAccessoriesReference.flatSheetMultiplier} (база ${pricing.accessoryBaseFlatSheetPriceRubPerM2.toFixed(2)} руб/м2).`,
+    `Стартовая планка ФИУ6хA рассчитывается от цены плоского листа t=2,0 мм (${pricing.starterBaseFlatSheet2mmPriceRubPerM2.toFixed(2)} руб/м2) x ${enclosingAccessoriesReference.flatSheetMultiplier}.`,
+    'Доборные элементы в спецификации учитываются в м2 по формуле ТСП.',
+    'Уплотнители добавляются из прайс-листа №12.5 (замковый и профильные для кровли).',
+    'В стеновые доборы включены нащельники стыков, наружные углы и отлив цоколя (без учета проемов).',
+    'Длины саморезов для МП ТСП-Z и МП ТСП-К подбираются строго по рекомендациям АТР.',
+    'Крепеж стеновых панелей: 3 шт на панель по ряду (Техкаталог ТСП, п.7.7.3).',
+    'Крепеж доборных элементов: шаг 300 мм (узлы АТР ТСП), эквивалентно ceil(L/0.3).',
+    'Анкерные болты цоколя: шаг 600 мм для крепления опорного элемента/отлива к основанию (узлы АТР ТСП).',
+    `Крепеж кровельных панелей к прогонам: 500 мм по ширине панели + 250 мм по карнизной линии, шаг прогонов ${input.roofPurlinStepM.toFixed(2)} м (Техкаталог ТСП, п.7.9.9).`,
+    'Крепеж панелей по продольному нахлесту: шаг <=500 мм по гофру нахлеста (Техкаталог ТСП, п.7.9.11).',
+    'Цены крепежа берутся из прайс-листов №12.4 (Гарпун для сэндвич-панелей) и №7 (4.8x28 ROOFRetail для доборов). Если точной длины самореза нет в прайсе, в спецификацию ставится следующая большая длина.',
+    'Рабочая ширина стеновой панели фиксирована: 1000 мм.',
+    `Стеновые панели принимаются с горизонтальным монтажом; длина панели равна шагу рамы (${input.frameStepM} м).`,
   ]
 
   const classes = Object.fromEntries(
