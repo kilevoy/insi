@@ -1,9 +1,12 @@
-import type { DomainTab } from '@/app/App'
+﻿import type { DomainTab } from '@/app/App'
 import type { CandidateResult } from '@/domain/common/model/candidate-result'
 import type { ColumnCalculationResult } from '@/domain/column/model/calculate-column'
 import type { ColumnGroupKey } from '@/domain/column/model/column-output'
 import type { PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
+import { calculateMountingCost } from '@/domain/mounting-cost/model/calculate-mounting-cost'
+import { mapUnifiedInputToMountingCostInput } from '@/domain/mounting-cost/model/mounting-cost-mapper'
 import type { UnifiedInputState } from '../model/unified-input'
+import { FLOOR_TYPE_OPTIONS } from '../model/unified-input-options'
 import { MethodologyPanel } from './methodology-panel'
 
 interface ResultsPanelProps {
@@ -25,6 +28,7 @@ interface ResultsPanelProps {
   selectedLstkPurlinIndex: number
   onSortPurlinSelect: (selectedIndex: number) => void
   onLstkPurlinSelect: (selectedIndex: number) => void
+  onInputPatch: (patch: Partial<UnifiedInputState>) => void
 }
 
 const COLUMN_GROUPS: ReadonlyArray<{ key: ColumnGroupKey; title: string }> = [
@@ -67,6 +71,14 @@ function formatRub(value: number): string {
 
 function formatStepLimitMm(value: number, zeroLabel = 'авто'): string {
   return value > 0 ? formatNumber(value, 0) : zeroLabel
+}
+
+function parseNonNegative(value: string): number {
+  const numeric = Number(value.replace(',', '.'))
+  if (!Number.isFinite(numeric)) {
+    return 0
+  }
+  return Math.max(0, numeric)
 }
 
 function resolveWindRegionLabel(windLoadKpa: number | undefined): string {
@@ -700,6 +712,437 @@ function renderGeneralSpecificationOverview(
   )
 }
 
+function renderMountingCostOverview(
+  input: UnifiedInputState,
+  purlinResult: PurlinCalculationResult | null,
+  columnResult: ColumnCalculationResult | null,
+  purlinSpecificationSource: UnifiedInputState['purlinSpecificationSource'],
+  purlinSelectionMode: UnifiedInputState['purlinSelectionMode'],
+  selectedSortPurlinIndex: number,
+  selectedLstkPurlinIndex: number,
+  onInputPatch: (patch: Partial<UnifiedInputState>) => void,
+) {
+  const { selectedCandidate } = resolvePurlinSpecificationState(
+    purlinResult,
+    purlinSpecificationSource,
+    purlinSelectionMode,
+    selectedSortPurlinIndex,
+    selectedLstkPurlinIndex,
+  )
+
+  const columnTotalMassKg = columnResult?.specification.totalMassKg ?? 0
+  const purlinTotalMassKg = selectedCandidate?.totalMassKg ?? 0
+  const metalStructuresTotalMassKg = columnTotalMassKg + purlinTotalMassKg
+  const purlinLstkMassKg = purlinSpecificationSource === 'lstk' ? purlinTotalMassKg : 0
+  const purlinBlackMassKg = purlinSpecificationSource === 'sort' ? purlinTotalMassKg : 0
+  const lstkStructuresTotalMassKg = purlinLstkMassKg
+  const blackStructuresTotalMassKg = columnTotalMassKg + purlinBlackMassKg
+  const metalModeLabel =
+    lstkStructuresTotalMassKg > 0 && blackStructuresTotalMassKg > 0
+      ? 'ЛСТК + черняк'
+      : lstkStructuresTotalMassKg > 0
+        ? 'ЛСТК'
+        : 'черняк'
+  const updateBoolean = (key: keyof UnifiedInputState, value: boolean) => {
+    onInputPatch({ [key]: value } as Partial<UnifiedInputState>)
+  }
+  const updateNumber = (key: keyof UnifiedInputState, value: string) => {
+    onInputPatch({ [key]: parseNonNegative(value) } as Partial<UnifiedInputState>)
+  }
+
+  try {
+    const mountingInput = mapUnifiedInputToMountingCostInput(input, {
+      columnTotalMassKg,
+      purlinTotalMassKg,
+      metalStructuresTotalMassKg,
+      lstkStructuresTotalMassKg,
+      blackStructuresTotalMassKg,
+    })
+    const mountingResult = calculateMountingCost(mountingInput)
+
+    return (
+      <div className="tab-pane animate-in" data-testid="mounting-panel">
+        <div className="results-section results-section--summary-sheet">
+          <div className="results-table-head results-table-head--summary">
+            <div>
+              <h3 className="results-section-title">СМР / Монтаж</h3>
+              <p className="results-inline-note" style={{ marginTop: 6 }}>
+                Расчет секций 1–13 на базе матрицы 2026 с параметрами, которые задаются прямо в этой вкладке.
+              </p>
+            </div>
+            <button className="results-print-action" onClick={() => window.print()}>
+              Печать / PDF
+            </button>
+          </div>
+
+          <div className="summary-hero">
+            <div className="summary-metric-card summary-metric-card--accent">
+              <span>Итог СМР</span>
+              <strong>{`${formatRub(mountingResult.totalRub)} руб.`}</strong>
+            </div>
+            <div className="summary-metric-card">
+              <span>Подытог</span>
+              <strong>{`${formatRub(mountingResult.subtotalRub)} руб.`}</strong>
+            </div>
+            <div className="summary-metric-card">
+              <span>Региональный коэффициент</span>
+              <strong>{formatNumber(mountingResult.regionCoefficient, 2)}</strong>
+            </div>
+            <div className="summary-metric-card">
+              <span>Режим металла</span>
+              <strong>{metalModeLabel}</strong>
+            </div>
+          </div>
+
+          <div className="results-section">
+            <h3 className="results-section-title">Параметры СМР</h3>
+            <div className="field-row">
+              <label className="field">
+                <span className="field-label">Тип пола</span>
+                <select
+                  className="field-select"
+                  value={input.floorType}
+                  onChange={(event) =>
+                    onInputPatch({
+                      floorType: event.target.value as UnifiedInputState['floorType'],
+                    })
+                  }
+                >
+                  {FLOOR_TYPE_OPTIONS.map((floorType) => (
+                    <option key={floorType} value={floorType}>
+                      {floorType === 'slab-150'
+                        ? 'Плита 150 мм (1 армирование)'
+                        : 'Плита 200 мм (2 армирования)'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="load-grid load-grid--summary" style={{ marginTop: 10 }}>
+              <label className="load-tile">
+                <span>Геология</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeGeology}
+                  onChange={(event) => updateBoolean('includeGeology', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Проект</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeProject}
+                  onChange={(event) => updateBoolean('includeProject', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Земляные</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeEarthworks}
+                  onChange={(event) => updateBoolean('includeEarthworks', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Бетонные</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeConcrete}
+                  onChange={(event) => updateBoolean('includeConcrete', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Полы</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeFloors}
+                  onChange={(event) => updateBoolean('includeFloors', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Металлоконструкции</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeMetal}
+                  onChange={(event) => updateBoolean('includeMetal', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Стены</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeWalls}
+                  onChange={(event) => updateBoolean('includeWalls', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Кровля</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeRoof}
+                  onChange={(event) => updateBoolean('includeRoof', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Окна/двери/ворота</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeOpenings}
+                  onChange={(event) => updateBoolean('includeOpenings', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Доп. работы</span>
+                <input
+                  type="checkbox"
+                  checked={input.includeAdditionalWorks}
+                  onChange={(event) => updateBoolean('includeAdditionalWorks', event.target.checked)}
+                />
+              </label>
+            </div>
+
+            <div className="field-row field-row--three">
+              <label className="field">
+                <span className="field-label">Ограждение кровли, м</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.roofFenceLengthM}
+                  onChange={(event) => updateNumber('roofFenceLengthM', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Снегозадержатели, м</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.snowGuardLengthM}
+                  onChange={(event) => updateNumber('snowGuardLengthM', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Водоотведение, м</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.drainageLengthM}
+                  onChange={(event) => updateNumber('drainageLengthM', event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="field-row field-row--three">
+              <label className="field">
+                <span className="field-label">Дверь двойная, м2</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.doubleDoorAreaM2}
+                  onChange={(event) => updateNumber('doubleDoorAreaM2', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Дверь одинарная, шт</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={input.singleDoorCount}
+                  onChange={(event) => updateNumber('singleDoorCount', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Входной блок, м2</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.entranceBlockAreaM2}
+                  onChange={(event) => updateNumber('entranceBlockAreaM2', event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="field-row field-row--three">
+              <label className="field">
+                <span className="field-label">Дверь тамбура, м2</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.tambourDoorAreaM2}
+                  onChange={(event) => updateNumber('tambourDoorAreaM2', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Окна, м2</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.windowsAreaM2}
+                  onChange={(event) => updateNumber('windowsAreaM2', event.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span className="field-label">Ворота, м2</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.gatesAreaM2}
+                  onChange={(event) => updateNumber('gatesAreaM2', event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="field-row">
+              <label className="field">
+                <span className="field-label">Доп. работы, м3</span>
+                <input
+                  className="field-input"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  value={input.additionalWorksVolumeM3}
+                  onChange={(event) => updateNumber('additionalWorksVolumeM3', event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="load-grid load-grid--summary" style={{ marginTop: 10 }}>
+              <label className="load-tile">
+                <span>Водоснабжение</span>
+                <input
+                  type="checkbox"
+                  checked={input.hasWaterSupply}
+                  onChange={(event) => updateBoolean('hasWaterSupply', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Канализация</span>
+                <input
+                  type="checkbox"
+                  checked={input.hasSewerage}
+                  onChange={(event) => updateBoolean('hasSewerage', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Отопление</span>
+                <input
+                  type="checkbox"
+                  checked={input.hasHeating}
+                  onChange={(event) => updateBoolean('hasHeating', event.target.checked)}
+                />
+              </label>
+              <label className="load-tile">
+                <span>Электромонтаж</span>
+                <input
+                  type="checkbox"
+                  checked={input.hasElectricalWorks}
+                  onChange={(event) => updateBoolean('hasElectricalWorks', event.target.checked)}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="load-grid load-grid--summary">
+            <div className="load-tile">
+              <span>Город</span>
+              <strong>{input.city}</strong>
+            </div>
+            <div className="load-tile">
+              <span>Сумма колонн</span>
+              <strong>{`${formatNumber(columnTotalMassKg, 0)} кг`}</strong>
+            </div>
+            <div className="load-tile">
+              <span>Сумма прогонов</span>
+              <strong>{`${formatNumber(purlinTotalMassKg, 0)} кг`}</strong>
+            </div>
+            <div className="load-tile load-tile--total">
+              <span>Масса металлоконструкций</span>
+              <strong>{`${formatNumber(metalStructuresTotalMassKg, 0)} кг`}</strong>
+            </div>
+            <div className="load-tile">
+              <span>ЛСТК масса</span>
+              <strong>{`${formatNumber(lstkStructuresTotalMassKg, 0)} кг`}</strong>
+            </div>
+            <div className="load-tile">
+              <span>Черные МК масса</span>
+              <strong>{`${formatNumber(blackStructuresTotalMassKg, 0)} кг`}</strong>
+            </div>
+          </div>
+
+          <div className="results-section">
+            <h3 className="results-section-title">Стоимость по разделам</h3>
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Код</th>
+                    <th>Наименование</th>
+                    <th>Ед.</th>
+                    <th>Кол-во</th>
+                    <th>Цена, руб.</th>
+                    <th>Сумма, руб.</th>
+                    <th>Основание</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mountingResult.sections.flatMap((section) =>
+                    section.items.map((item) => (
+                      <tr key={`${section.key}-${item.code}`}>
+                        <td>{item.code}</td>
+                        <td>{item.title}</td>
+                        <td>{item.unit}</td>
+                        <td>{formatNumber(item.quantity, 3)}</td>
+                        <td>{formatRub(item.unitPriceRub)}</td>
+                        <td>{formatRub(item.totalRub)}</td>
+                        <td>{item.basis}</td>
+                      </tr>
+                    )),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {mountingResult.note && (
+            <div className="footer-note">
+              <strong>Примечание:</strong> {mountingResult.note}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  } catch (error) {
+    return (
+      <div className="tab-pane animate-in" data-testid="mounting-panel">
+        <div className="results-error">
+          <h4 style={{ margin: '0 0 8px' }}>Ошибка расчета СМР</h4>
+          <p style={{ margin: 0 }}>
+            {error instanceof Error ? error.message : 'Не удалось выполнить расчет монтажа'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+}
+
 export function ResultsPanel({
   input,
   activeTab,
@@ -719,9 +1162,13 @@ export function ResultsPanel({
   selectedLstkPurlinIndex,
   onSortPurlinSelect,
   onLstkPurlinSelect,
+  onInputPatch,
 }: ResultsPanelProps) {
   const activeErrors =
-    activeTab === 'summary' || activeTab === 'enclosing' || activeTab === 'methodology'
+    activeTab === 'summary' ||
+    activeTab === 'enclosing' ||
+    activeTab === 'methodology' ||
+    activeTab === 'mounting'
       ? [
           { scope: 'Прогоны', message: purlinError },
           { scope: 'Колонны', message: columnError },
@@ -778,6 +1225,8 @@ export function ResultsPanel({
             selectedLstkPurlinIndex,
           )}
         </div>
+      ) : activeTab === 'methodology' ? (
+        <MethodologyPanel input={input} purlinResult={purlinResult} columnResult={columnResult} />
       ) : activeTab === 'enclosing' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">
@@ -785,8 +1234,17 @@ export function ResultsPanel({
             <div className="results-empty">Раздел в разработке</div>
           </div>
         </div>
-      ) : activeTab === 'methodology' ? (
-        <MethodologyPanel input={input} purlinResult={purlinResult} columnResult={columnResult} />
+      ) : activeTab === 'mounting' ? (
+        renderMountingCostOverview(
+          input,
+          purlinResult,
+          columnResult,
+          purlinSpecificationSource,
+          purlinSelectionMode,
+          selectedSortPurlinIndex,
+          selectedLstkPurlinIndex,
+          onInputPatch,
+        )
       ) : activeTab === 'purlin' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">

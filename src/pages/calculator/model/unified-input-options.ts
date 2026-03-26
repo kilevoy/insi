@@ -20,6 +20,7 @@ export const SPANS_COUNT_OPTIONS = ['один', 'более одного'] as co
 export const PRESENCE_OPTIONS = ['нет', 'есть'] as const
 export const YES_NO_OPTIONS = ['нет', 'да'] as const
 export const SNOW_BAG_MODE_OPTIONS = ['нет', 'вдоль здания', 'поперёк здания'] as const
+export const FLOOR_TYPE_OPTIONS = ['slab-150', 'slab-200'] as const
 export const COLUMN_TYPE_OPTIONS = [
   COLUMN_TYPE_EXTREME,
   COLUMN_TYPE_FACHWERK,

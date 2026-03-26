@@ -1,4 +1,4 @@
-import { useEffect, useState, useTransition } from 'react'
+﻿import { useEffect, useState, useTransition } from 'react'
 import type { DomainTab } from '@/app/App'
 import { calculateColumn, type ColumnCalculationResult } from '@/domain/column/model/calculate-column'
 import { calculatePurlin, type PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
@@ -194,6 +194,13 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
 
           <div className="topbar-utility-group">
             <button
+              className={`tab tab--utility ${activeTab === 'mounting' ? 'active' : ''}`}
+              data-testid="tab-mounting"
+              onClick={() => setActiveTab('mounting')}
+            >
+              СМР
+            </button>
+            <button
               className={`tab tab--utility ${activeTab === 'methodology' ? 'active' : ''}`}
               data-testid="tab-methodology"
               onClick={() => setActiveTab('methodology')}
@@ -246,9 +253,12 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
             selectedLstkPurlinIndex={input.selectedLstkPurlinIndex}
             onSortPurlinSelect={handleSortPurlinSelect}
             onLstkPurlinSelect={handleLstkPurlinSelect}
+            onInputPatch={handleFieldsChange}
           />
         </div>
       </div>
     </div>
   )
 }
+
+

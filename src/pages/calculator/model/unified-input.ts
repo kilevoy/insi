@@ -6,6 +6,7 @@ import {
   DEFAULT_ROOF_COVERING,
   DEFAULT_UNIFIED_CITY,
   DEFAULT_WALL_COVERING,
+  FLOOR_TYPE_OPTIONS,
   PRESENCE_OPTIONS,
   PROFILE_SHEET_OPTIONS,
   PURLIN_SELECTION_MODE_OPTIONS,
@@ -34,6 +35,31 @@ export interface UnifiedInputState {
   spansCount: (typeof SPANS_COUNT_OPTIONS)[number]
   perimeterBracing: (typeof PRESENCE_OPTIONS)[number]
   terrainType: (typeof TERRAIN_OPTIONS)[number]
+  floorType: (typeof FLOOR_TYPE_OPTIONS)[number]
+  includeGeology: boolean
+  includeProject: boolean
+  includeEarthworks: boolean
+  includeConcrete: boolean
+  includeFloors: boolean
+  includeMetal: boolean
+  includeWalls: boolean
+  includeRoof: boolean
+  includeOpenings: boolean
+  includeAdditionalWorks: boolean
+  hasWaterSupply: boolean
+  hasSewerage: boolean
+  hasHeating: boolean
+  hasElectricalWorks: boolean
+  roofFenceLengthM: number
+  snowGuardLengthM: number
+  drainageLengthM: number
+  doubleDoorAreaM2: number
+  singleDoorCount: number
+  entranceBlockAreaM2: number
+  tambourDoorAreaM2: number
+  windowsAreaM2: number
+  gatesAreaM2: number
+  additionalWorksVolumeM3: number
 
   roofCoveringType: string
   wallCoveringType: string
@@ -254,6 +280,30 @@ function normalizeBoundedInteger(value: unknown, fallback: number): number {
   return Number.isFinite(numeric) ? Math.max(0, Math.trunc(numeric)) : fallback
 }
 
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'да') {
+      return true
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'нет') {
+      return false
+    }
+  }
+  return fallback
+}
+
+function normalizeNonNegativeNumber(value: unknown, fallback: number): number {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) {
+    return fallback
+  }
+  return Math.max(0, numeric)
+}
+
 export const defaultUnifiedInput: UnifiedInputState = {
   city: DEFAULT_UNIFIED_CITY,
   responsibilityLevel: '1',
@@ -267,6 +317,31 @@ export const defaultUnifiedInput: UnifiedInputState = {
   spansCount: 'один',
   perimeterBracing: 'нет',
   terrainType: 'В',
+  floorType: 'slab-150',
+  includeGeology: true,
+  includeProject: true,
+  includeEarthworks: true,
+  includeConcrete: true,
+  includeFloors: true,
+  includeMetal: true,
+  includeWalls: true,
+  includeRoof: true,
+  includeOpenings: false,
+  includeAdditionalWorks: false,
+  hasWaterSupply: false,
+  hasSewerage: false,
+  hasHeating: false,
+  hasElectricalWorks: false,
+  roofFenceLengthM: 0,
+  snowGuardLengthM: 0,
+  drainageLengthM: 0,
+  doubleDoorAreaM2: 0,
+  singleDoorCount: 0,
+  entranceBlockAreaM2: 0,
+  tambourDoorAreaM2: 0,
+  windowsAreaM2: 0,
+  gatesAreaM2: 0,
+  additionalWorksVolumeM3: 0,
 
   roofCoveringType: DEFAULT_ROOF_COVERING,
   wallCoveringType: DEFAULT_WALL_COVERING,
@@ -325,6 +400,65 @@ export function normalizeLoadedInput(raw: unknown): UnifiedInputState {
     spansCount: normalizeSpansCount(parsed.spansCount),
     perimeterBracing: normalizePresenceMode(parsed.perimeterBracing),
     terrainType: normalizeTerrainType(parsed.terrainType),
+    floorType: normalizeCatalogValue(
+      parsed.floorType,
+      FLOOR_TYPE_OPTIONS,
+      defaultUnifiedInput.floorType,
+    ) as UnifiedInputState['floorType'],
+    includeGeology: normalizeBoolean(parsed.includeGeology, defaultUnifiedInput.includeGeology),
+    includeProject: normalizeBoolean(parsed.includeProject, defaultUnifiedInput.includeProject),
+    includeEarthworks: normalizeBoolean(parsed.includeEarthworks, defaultUnifiedInput.includeEarthworks),
+    includeConcrete: normalizeBoolean(parsed.includeConcrete, defaultUnifiedInput.includeConcrete),
+    includeFloors: normalizeBoolean(parsed.includeFloors, defaultUnifiedInput.includeFloors),
+    includeMetal: normalizeBoolean(parsed.includeMetal, defaultUnifiedInput.includeMetal),
+    includeWalls: normalizeBoolean(parsed.includeWalls, defaultUnifiedInput.includeWalls),
+    includeRoof: normalizeBoolean(parsed.includeRoof, defaultUnifiedInput.includeRoof),
+    includeOpenings: normalizeBoolean(parsed.includeOpenings, defaultUnifiedInput.includeOpenings),
+    includeAdditionalWorks: normalizeBoolean(
+      parsed.includeAdditionalWorks,
+      defaultUnifiedInput.includeAdditionalWorks,
+    ),
+    hasWaterSupply: normalizeBoolean(parsed.hasWaterSupply, defaultUnifiedInput.hasWaterSupply),
+    hasSewerage: normalizeBoolean(parsed.hasSewerage, defaultUnifiedInput.hasSewerage),
+    hasHeating: normalizeBoolean(parsed.hasHeating, defaultUnifiedInput.hasHeating),
+    hasElectricalWorks: normalizeBoolean(
+      parsed.hasElectricalWorks,
+      defaultUnifiedInput.hasElectricalWorks,
+    ),
+    roofFenceLengthM: normalizeNonNegativeNumber(
+      parsed.roofFenceLengthM,
+      defaultUnifiedInput.roofFenceLengthM,
+    ),
+    snowGuardLengthM: normalizeNonNegativeNumber(
+      parsed.snowGuardLengthM,
+      defaultUnifiedInput.snowGuardLengthM,
+    ),
+    drainageLengthM: normalizeNonNegativeNumber(
+      parsed.drainageLengthM,
+      defaultUnifiedInput.drainageLengthM,
+    ),
+    doubleDoorAreaM2: normalizeNonNegativeNumber(
+      parsed.doubleDoorAreaM2,
+      defaultUnifiedInput.doubleDoorAreaM2,
+    ),
+    singleDoorCount: normalizeNonNegativeNumber(
+      parsed.singleDoorCount,
+      defaultUnifiedInput.singleDoorCount,
+    ),
+    entranceBlockAreaM2: normalizeNonNegativeNumber(
+      parsed.entranceBlockAreaM2,
+      defaultUnifiedInput.entranceBlockAreaM2,
+    ),
+    tambourDoorAreaM2: normalizeNonNegativeNumber(
+      parsed.tambourDoorAreaM2,
+      defaultUnifiedInput.tambourDoorAreaM2,
+    ),
+    windowsAreaM2: normalizeNonNegativeNumber(parsed.windowsAreaM2, defaultUnifiedInput.windowsAreaM2),
+    gatesAreaM2: normalizeNonNegativeNumber(parsed.gatesAreaM2, defaultUnifiedInput.gatesAreaM2),
+    additionalWorksVolumeM3: normalizeNonNegativeNumber(
+      parsed.additionalWorksVolumeM3,
+      defaultUnifiedInput.additionalWorksVolumeM3,
+    ),
     roofCoveringType: normalizeCatalogValue(
       parsed.roofCoveringType,
       UNIFIED_COVERING_OPTIONS,

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+﻿import { expect, test } from '@playwright/test'
 
 test('renders the calculator shell by default', async ({ page }) => {
   await page.goto('/')
@@ -14,7 +14,7 @@ test('renders the calculator shell by default', async ({ page }) => {
   await expect(page.getByText('Параметры расчета')).toBeVisible()
 })
 
-test('switches between summary, enclosing, methodology, column and purlin result tabs', async ({ page }) => {
+test('switches between summary, enclosing, methodology, mounting, column and purlin result tabs', async ({ page }) => {
   await page.goto('/')
 
   await page.getByTestId('tab-summary').click()
@@ -28,6 +28,10 @@ test('switches between summary, enclosing, methodology, column and purlin result
   await page.getByTestId('tab-methodology').click()
   await expect(page.getByTestId('tab-methodology')).toHaveClass(/active/)
   await expect(page.getByText('Excel parity')).toBeVisible()
+
+  await page.getByTestId('tab-mounting').click({ force: true })
+  await expect(page.getByTestId('tab-mounting')).toHaveClass(/active/)
+  await expect(page.getByText('Стоимость по разделам')).toBeVisible()
 
   await page.getByTestId('tab-purlin').click()
   await expect(page.getByTestId('tab-purlin')).toHaveClass(/active/)
