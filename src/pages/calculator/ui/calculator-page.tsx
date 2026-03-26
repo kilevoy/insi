@@ -1,6 +1,12 @@
 import { useEffect, useState, useTransition } from 'react'
 import type { DomainTab } from '@/app/App'
 import { calculateColumn, type ColumnCalculationResult } from '@/domain/column/model/calculate-column'
+import { parseEnclosingPricingValuesFromPdfFile } from '@/domain/enclosing/model/enclosing-price-pdf-import'
+import {
+  clearEnclosingPricingOverrides,
+  loadEnclosingPricingOverrides,
+  saveEnclosingPricingOverrides,
+} from '@/domain/enclosing/model/enclosing-pricing-overrides'
 import { calculatePurlin, type PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
 import { useCalculatorStore } from '../model/calculator-store'
 import { mapToColumnInput, mapToPurlinInput } from '../model/input-mapper'
@@ -17,6 +23,14 @@ type ColumnGroupKey = 'extreme' | 'fachwerk' | 'middle'
 type CalculationState<T> = { result: T | null; error: string | null }
 type ThemeMode = 'light' | 'dark'
 const THEME_STORAGE_KEY = 'metalcalc-theme'
+
+interface PriceImportStatus {
+  isLoading: boolean
+  message: string | null
+  error: string | null
+  sourceFileName: string | null
+  importedAtIso: string | null
+}
 
 const PROFILE_FIELD_BY_GROUP: Record<
   ColumnGroupKey,
@@ -86,6 +100,16 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
   const [columnResult, setColumnResult] = useState<ColumnCalculationResult | null>(initialColumnState.result)
   const [purlinError, setPurlinError] = useState<string | null>(initialPurlinState.error)
   const [columnError, setColumnError] = useState<string | null>(initialColumnState.error)
+  const [priceImportStatus, setPriceImportStatus] = useState<PriceImportStatus>(() => {
+    const persisted = loadEnclosingPricingOverrides()
+    return {
+      isLoading: false,
+      message: persisted ? 'Используются импортированные цены прайса.' : null,
+      error: null,
+      sourceFileName: persisted?.sourceFileName ?? null,
+      importedAtIso: persisted?.importedAtIso ?? null,
+    }
+  })
 
   const recalculate = (nextInput: UnifiedInputState) => {
     const nextPurlinState = safeCalculatePurlin(nextInput)
@@ -144,6 +168,57 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
 
   const handleLstkPurlinSelect = (selectedIndex: number) => {
     handleFieldChange('selectedLstkPurlinIndex', selectedIndex)
+  }
+
+  const handlePricePdfImport = async (file: File) => {
+    setPriceImportStatus((prev) => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+      message: null,
+    }))
+
+    try {
+      const parsed = await parseEnclosingPricingValuesFromPdfFile(file)
+      if (parsed.extractedFields.length === 0) {
+        throw new Error('Не удалось извлечь цены из PDF. Проверьте формат прайса.')
+      }
+
+      const importedAtIso = new Date().toISOString()
+      saveEnclosingPricingOverrides({
+        sourceFileName: file.name,
+        importedAtIso,
+        values: parsed.values,
+      })
+
+      setPriceImportStatus({
+        isLoading: false,
+        message: `Импортировано полей цен: ${parsed.extractedFields.length}.`,
+        error: null,
+        sourceFileName: file.name,
+        importedAtIso,
+      })
+      startTransition(() => recalculate(input))
+    } catch (error) {
+      setPriceImportStatus((prev) => ({
+        ...prev,
+        isLoading: false,
+        message: null,
+        error: error instanceof Error ? error.message : 'Ошибка импорта прайса.',
+      }))
+    }
+  }
+
+  const handlePriceOverridesReset = () => {
+    clearEnclosingPricingOverrides()
+    setPriceImportStatus({
+      isLoading: false,
+      message: 'Импортированные цены сброшены. Используются базовые значения.',
+      error: null,
+      sourceFileName: null,
+      importedAtIso: null,
+    })
+    startTransition(() => recalculate(input))
   }
 
   return (
@@ -223,7 +298,13 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
 
       <div className="split-view">
         <div className="split-left">
-          <UnifiedInputPanel input={input} onChange={handleFieldChange} />
+          <UnifiedInputPanel
+            input={input}
+            onChange={handleFieldChange}
+            onImportPricePdf={handlePricePdfImport}
+            onResetPriceOverrides={handlePriceOverridesReset}
+            priceImportStatus={priceImportStatus}
+          />
         </div>
 
         <div className="split-right">

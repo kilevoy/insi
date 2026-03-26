@@ -14,6 +14,7 @@ import {
   enclosingPanelPriceRubPerM2,
   type EnclosingClassKey,
 } from './enclosing-reference.generated'
+import { loadEnclosingPricingOverrides, type EnclosingPricingOverrideValues } from './enclosing-pricing-overrides'
 
 const STEEL_DENSITY_KG_PER_M3 = 7850
 const FACING_STEEL_THICKNESS_M = 0.0005
@@ -118,6 +119,38 @@ const ROOF_END_FI34_DEV_WIDTH_M_BY_THICKNESS: Record<number, number> = {
   150: 0.625,
   200: 0.834,
   250: 0.834,
+}
+
+interface EnclosingPricingRuntime {
+  accessoryBaseFlatSheetPriceRubPerM2: number
+  starterBaseFlatSheet2mmPriceRubPerM2: number
+  harpoonPanelFastenerPriceRubByLengthMm: Record<number, number>
+  accessoryFastenerPriceRub: number
+  lockGasketPackPriceRub: number
+  roofProfileGasketPriceRub: number
+  wallSocleDripPriceRubPerPiece: number
+  socleAnchorBoltPriceRub: number
+}
+
+function resolveEnclosingPricingRuntime(): EnclosingPricingRuntime {
+  const stored = loadEnclosingPricingOverrides()?.values ?? {}
+  const typed = stored as Partial<EnclosingPricingOverrideValues>
+
+  return {
+    accessoryBaseFlatSheetPriceRubPerM2:
+      typed.accessoryBaseFlatSheetPriceRubPerM2 ?? ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2,
+    starterBaseFlatSheet2mmPriceRubPerM2:
+      typed.starterBaseFlatSheet2mmPriceRubPerM2 ?? STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2,
+    harpoonPanelFastenerPriceRubByLengthMm: {
+      ...HARPOON_PANEL_FASTENER_PRICE_RUB_BY_LENGTH_MM,
+      ...(typed.harpoonPanelFastenerPriceRubByLengthMm ?? {}),
+    },
+    accessoryFastenerPriceRub: typed.accessoryFastenerPriceRub ?? ACCESSORY_FASTENER_PRICE_RUB,
+    lockGasketPackPriceRub: typed.lockGasketPackPriceRub ?? LOCK_GASKET_PACK_PRICE_RUB,
+    roofProfileGasketPriceRub: typed.roofProfileGasketPriceRub ?? ROOF_PROFILE_GASKET_PRICE_RUB,
+    wallSocleDripPriceRubPerPiece: typed.wallSocleDripPriceRubPerPiece ?? WALL_SOCLE_DRIP_PRICE_RUB_PER_PIECE,
+    socleAnchorBoltPriceRub: typed.socleAnchorBoltPriceRub ?? SOCLE_ANCHOR_BOLT_PRICE_RUB,
+  }
 }
 
 function toRadians(degrees: number): number {
@@ -360,6 +393,8 @@ function buildSectionSpecification(params: {
   sealantRows: EnclosingSealantRow[]
   panelWorkingWidthM?: number
   panelFastenerLengthByThicknessMm: Record<number, number>
+  panelFastenerPriceRubByLengthMm: Record<number, number>
+  accessoryFastenerPriceRub: number
   panelFastenerQuantity: number
   accessoryFastenerQuantity: number
   extraFastenerRows?: EnclosingFastenerRow[]
@@ -403,7 +438,7 @@ function buildSectionSpecification(params: {
     priced.resolvedThicknessMm,
   )
   const panelFastenerPrice = resolveFastenerPriceByLength(
-    HARPOON_PANEL_FASTENER_PRICE_RUB_BY_LENGTH_MM,
+    params.panelFastenerPriceRubByLengthMm,
     panelFastener.lengthMm,
   )
   if (panelFastener.requestedThicknessMm !== panelFastener.resolvedThicknessMm) {
@@ -439,8 +474,8 @@ function buildSectionSpecification(params: {
       unit: 'шт',
       quantity: params.accessoryFastenerQuantity,
       lengthMm: ACCESSORY_FASTENER_LENGTH_MM,
-      unitPriceRub: ACCESSORY_FASTENER_PRICE_RUB,
-      totalRub: roundRub(params.accessoryFastenerQuantity * ACCESSORY_FASTENER_PRICE_RUB),
+      unitPriceRub: params.accessoryFastenerPriceRub,
+      totalRub: roundRub(params.accessoryFastenerQuantity * params.accessoryFastenerPriceRub),
       note: 'Шаг крепления фасонных элементов принят 300 мм по узлам АТР ТСП.',
     },
   ]
@@ -476,6 +511,7 @@ function buildClassSpecification(params: {
   roofAreaM2: number
   roofPanelLengthM: number
   roofPurlinStepM: number
+  pricing: EnclosingPricingRuntime
   derivedAccessoryPriceRubPerM2: number
   selectedWallWorkingWidthMm: number
   notes: string[]
@@ -496,7 +532,7 @@ function buildClassSpecification(params: {
       `Стартовая планка (опорный элемент ФИУ6хA, t=${WALL_STARTER_FIU6_THICKNESS_MM.toFixed(1).replace('.', ',')} мм, узел 1.3.4, АТР ТСП)`,
       perimeterM,
       resolveDevelopedWidthByThickness(WALL_STARTER_FIU6_DEV_WIDTH_M_BY_THICKNESS, params.input.wallPanelThicknessMm),
-      STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2 * enclosingAccessoriesReference.flatSheetMultiplier,
+      params.pricing.starterBaseFlatSheet2mmPriceRubPerM2 * enclosingAccessoriesReference.flatSheetMultiplier,
     ),
     calcAccessoryRow(
       `${params.classKey}-walls-joint-cover`,
@@ -520,7 +556,7 @@ function buildClassSpecification(params: {
       'Планка отлива цоколя 50х20х2000 (прайс №3.5)',
       perimeterM,
       WALL_SOCLE_DRIP_DEV_WIDTH_M,
-      WALL_SOCLE_DRIP_PRICE_RUB_PER_PIECE / (WALL_SOCLE_DRIP_LENGTH_M * WALL_SOCLE_DRIP_DEV_WIDTH_M),
+      params.pricing.wallSocleDripPriceRubPerPiece / (WALL_SOCLE_DRIP_LENGTH_M * WALL_SOCLE_DRIP_DEV_WIDTH_M),
     ),
   ].filter((row): row is EnclosingAccessoryRow => row !== null)
 
@@ -531,7 +567,7 @@ function buildClassSpecification(params: {
       'Уплотнитель замкового соединения ТСП (8 мм x 30 м)',
       wallJointLengthM,
       LOCK_GASKET_PACK_LENGTH_M,
-      LOCK_GASKET_PACK_PRICE_RUB,
+      params.pricing.lockGasketPackPriceRub,
     ),
   ].filter((row): row is EnclosingSealantRow => row !== null)
 
@@ -595,7 +631,7 @@ function buildClassSpecification(params: {
       'Уплотнитель замкового соединения ТСП (8 мм x 30 м)',
       roofLockJointLengthM,
       LOCK_GASKET_PACK_LENGTH_M,
-      LOCK_GASKET_PACK_PRICE_RUB,
+      params.pricing.lockGasketPackPriceRub,
     ),
     calcPieceSealantRow(
       `${params.classKey}-roof-profile-gasket-a`,
@@ -603,7 +639,7 @@ function buildClassSpecification(params: {
       'Уплотнитель МП ТСП-К-А',
       ridgeLengthM,
       ROOF_PROFILE_GASKET_PIECE_LENGTH_M,
-      ROOF_PROFILE_GASKET_PRICE_RUB,
+      params.pricing.roofProfileGasketPriceRub,
     ),
     calcPieceSealantRow(
       `${params.classKey}-roof-profile-gasket-b`,
@@ -611,7 +647,7 @@ function buildClassSpecification(params: {
       'Уплотнитель МП ТСП-К-В',
       eaveLengthM,
       ROOF_PROFILE_GASKET_PIECE_LENGTH_M,
-      ROOF_PROFILE_GASKET_PRICE_RUB,
+      params.pricing.roofProfileGasketPriceRub,
     ),
   ].filter((row): row is EnclosingSealantRow => row !== null)
 
@@ -631,8 +667,8 @@ function buildClassSpecification(params: {
             unit: 'шт',
             quantity: wallSocleAnchorQuantity,
             lengthMm: SOCLE_ANCHOR_BOLT_LENGTH_MM,
-            unitPriceRub: SOCLE_ANCHOR_BOLT_PRICE_RUB,
-            totalRub: roundRub(wallSocleAnchorQuantity * SOCLE_ANCHOR_BOLT_PRICE_RUB),
+            unitPriceRub: params.pricing.socleAnchorBoltPriceRub,
+            totalRub: roundRub(wallSocleAnchorQuantity * params.pricing.socleAnchorBoltPriceRub),
             note: 'Шаг 600 мм по узлам АТР ТСП; цена по прайсу анкеров.',
           },
         ]
@@ -659,8 +695,8 @@ function buildClassSpecification(params: {
             unit: 'шт',
             quantity: roofLapFastenerQuantity,
             lengthMm: ACCESSORY_FASTENER_LENGTH_MM,
-            unitPriceRub: ACCESSORY_FASTENER_PRICE_RUB,
-            totalRub: roundRub(roofLapFastenerQuantity * ACCESSORY_FASTENER_PRICE_RUB),
+            unitPriceRub: params.pricing.accessoryFastenerPriceRub,
+            totalRub: roundRub(roofLapFastenerQuantity * params.pricing.accessoryFastenerPriceRub),
             note: 'Шаг крепления по нахлесточному гофру не более 500 мм (Техкаталог ТСП, п.7.9.11).',
           },
         ]
@@ -684,6 +720,8 @@ function buildClassSpecification(params: {
     sealantRows: wallSealants,
     panelWorkingWidthM: wallWorkingWidthM,
     panelFastenerLengthByThicknessMm: WALL_FASTENER_LENGTH_MM_BY_THICKNESS_ATR,
+    panelFastenerPriceRubByLengthMm: params.pricing.harpoonPanelFastenerPriceRubByLengthMm,
+    accessoryFastenerPriceRub: params.pricing.accessoryFastenerPriceRub,
     panelFastenerQuantity: wallPanelFastenerQuantity,
     accessoryFastenerQuantity: wallAccessoryFastenerQuantity,
     extraFastenerRows: wallExtraFastenerRows,
@@ -708,6 +746,8 @@ function buildClassSpecification(params: {
     accessoryRows: roofAccessories,
     sealantRows: roofSealants,
     panelFastenerLengthByThicknessMm: ROOF_FASTENER_LENGTH_MM_BY_THICKNESS_ATR,
+    panelFastenerPriceRubByLengthMm: params.pricing.harpoonPanelFastenerPriceRubByLengthMm,
+    accessoryFastenerPriceRub: params.pricing.accessoryFastenerPriceRub,
     panelFastenerQuantity: roofPanelFastenerQuantity,
     accessoryFastenerQuantity: roofAccessoryFastenerQuantity,
     extraFastenerRows: roofLapFastenerRows,
@@ -732,6 +772,7 @@ function buildClassSpecification(params: {
 
 export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalculationResult {
   const input = enclosingInputSchema.parse(rawInput)
+  const pricing = resolveEnclosingPricingRuntime()
 
   const wallAreaGrossM2 = resolveWallAreaGrossM2(input)
   const roofAreaM2 = resolveRoofAreaM2(input)
@@ -741,12 +782,12 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
   const selectedWallWorkingWidthMm = 1000
 
   const derivedAccessoryPriceRubPerM2 =
-    ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2 * enclosingAccessoriesReference.flatSheetMultiplier
+    pricing.accessoryBaseFlatSheetPriceRubPerM2 * enclosingAccessoriesReference.flatSheetMultiplier
 
   const notes: string[] = [
     'Panel quantities are calculated by an enlarged layout scheme.',
-    `Accessories are calculated by price formula: flat sheet price x ${enclosingAccessoriesReference.flatSheetMultiplier} (base ${ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2} RUB/m2).`,
-    `Starter strip ФИУ6хA uses flat sheet t=2.0 mm price (${STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2.toFixed(2)} RUB/m2) x ${enclosingAccessoriesReference.flatSheetMultiplier}.`,
+    `Accessories are calculated by price formula: flat sheet price x ${enclosingAccessoriesReference.flatSheetMultiplier} (base ${pricing.accessoryBaseFlatSheetPriceRubPerM2.toFixed(2)} RUB/m2).`,
+    `Starter strip ФИУ6хA uses flat sheet t=2.0 mm price (${pricing.starterBaseFlatSheet2mmPriceRubPerM2.toFixed(2)} RUB/m2) x ${enclosingAccessoriesReference.flatSheetMultiplier}.`,
     'Accessories are priced per m2 according to the TSP price formula.',
     'Sealants are added from price list №12.5 (lock gasket and roof profile gaskets).',
     'Wall accessories include panel joints, outer corners and socle drip (no openings considered).',
@@ -771,6 +812,7 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
         roofAreaM2,
         roofPanelLengthM,
         roofPurlinStepM: input.roofPurlinStepM,
+        pricing,
         derivedAccessoryPriceRubPerM2,
         selectedWallWorkingWidthMm,
         notes,
@@ -801,7 +843,7 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
     accessories: {
       flatSheetMultiplier: enclosingAccessoriesReference.flatSheetMultiplier,
       formula: enclosingAccessoriesReference.formula,
-      baseFlatSheetPriceRubPerM2: ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2,
+      baseFlatSheetPriceRubPerM2: pricing.accessoryBaseFlatSheetPriceRubPerM2,
       derivedUnitPriceRubPerM2: derivedAccessoryPriceRubPerM2,
     },
     notes,
