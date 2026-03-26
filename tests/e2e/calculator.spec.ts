@@ -1,19 +1,29 @@
-﻿import { expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test('renders the calculator shell by default', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByTestId('calculator-page')).toBeVisible()
+  await expect(page.locator('.tabs > button')).toHaveText([
+    'Колонны',
+    'Прогоны',
+    'Ограждающие конструкции',
+    'Сводная',
+  ])
   await expect(page.getByTestId('tab-column')).toHaveClass(/active/)
   await expect(page.getByText('Параметры расчета')).toBeVisible()
 })
 
-test('switches between summary, methodology, column and purlin result tabs', async ({ page }) => {
+test('switches between summary, enclosing, methodology, column and purlin result tabs', async ({ page }) => {
   await page.goto('/')
 
   await page.getByTestId('tab-summary').click()
   await expect(page.getByTestId('tab-summary')).toHaveClass(/active/)
   await expect(page.getByText('Общие сведения о расчете')).toBeVisible()
+
+  await page.getByTestId('tab-enclosing').click()
+  await expect(page.getByTestId('tab-enclosing')).toHaveClass(/active/)
+  await expect(page.getByText('Раздел в разработке')).toBeVisible()
 
   await page.getByTestId('tab-methodology').click()
   await expect(page.getByTestId('tab-methodology')).toHaveClass(/active/)

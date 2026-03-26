@@ -1,4 +1,4 @@
-﻿import type { DomainTab } from '@/app/App'
+import type { DomainTab } from '@/app/App'
 import type { CandidateResult } from '@/domain/common/model/candidate-result'
 import type { ColumnCalculationResult } from '@/domain/column/model/calculate-column'
 import type { ColumnGroupKey } from '@/domain/column/model/column-output'
@@ -721,7 +721,7 @@ export function ResultsPanel({
   onLstkPurlinSelect,
 }: ResultsPanelProps) {
   const activeErrors =
-    activeTab === 'summary' || activeTab === 'methodology'
+    activeTab === 'summary' || activeTab === 'enclosing' || activeTab === 'methodology'
       ? [
           { scope: 'Прогоны', message: purlinError },
           { scope: 'Колонны', message: columnError },
@@ -777,6 +777,13 @@ export function ResultsPanel({
             selectedSortPurlinIndex,
             selectedLstkPurlinIndex,
           )}
+        </div>
+      ) : activeTab === 'enclosing' ? (
+        <div className="tab-pane animate-in">
+          <div className="results-section">
+            <h3 className="results-section-title">Ограждающие конструкции</h3>
+            <div className="results-empty">Раздел в разработке</div>
+          </div>
         </div>
       ) : activeTab === 'methodology' ? (
         <MethodologyPanel input={input} purlinResult={purlinResult} columnResult={columnResult} />

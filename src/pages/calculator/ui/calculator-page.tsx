@@ -177,6 +177,13 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
               Прогоны
             </button>
             <button
+              className={`tab ${activeTab === 'enclosing' ? 'active' : ''}`}
+              data-testid="tab-enclosing"
+              onClick={() => setActiveTab('enclosing')}
+            >
+              Ограждающие конструкции
+            </button>
+            <button
               className={`tab ${activeTab === 'summary' ? 'active' : ''}`}
               data-testid="tab-summary"
               onClick={() => setActiveTab('summary')}
@@ -245,4 +252,3 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
     </div>
   )
 }
-
