@@ -783,13 +783,13 @@ function renderEnclosingOverview(
                   <tr>
                     <th>Марка</th>
                     <th>Ширина, мм</th>
-                    <th>Ед. изм.</th>
                     <th>Толщина, мм</th>
                     <th>Длина, м</th>
                     <th>Штук</th>
                     <th>Вес, кг/м2</th>
                     <th>Вес общий, кг</th>
                     <th>Цена, руб/м2</th>
+                    <th>Кол-во, м2</th>
                     <th>Сумма, руб.</th>
                   </tr>
                 </thead>
@@ -798,13 +798,13 @@ function renderEnclosingOverview(
                     <tr key={row.key}>
                       <td>{row.mark}</td>
                       <td>{row.workingWidthMm}</td>
-                      <td>{row.unit}</td>
                       <td>{row.thicknessMm}</td>
                       <td>{formatNumber(row.panelLengthM, 2)}</td>
                       <td>{formatNumber(row.panelsCount, 0)}</td>
                       <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
                       <td>{formatNumber(row.totalMassKg, 2)}</td>
                       <td>{formatRub(row.unitPriceRubPerM2)}</td>
+                      <td>{formatNumber(row.areaM2, 2)}</td>
                       <td>{formatRub(row.totalRub)}</td>
                     </tr>
                   ))}
@@ -898,16 +898,13 @@ function renderEnclosingOverview(
                   <tr>
                     <th>Марка</th>
                     <th>Ширина, мм</th>
-                    <th>Ед. изм.</th>
                     <th>Толщина, мм</th>
                     <th>Длина, м</th>
                     <th>Штук</th>
-                    <th>Норматив</th>
-                    <th>Плотность, кг/м3</th>
-                    <th>Объем, м2</th>
                     <th>Вес, кг/м2</th>
                     <th>Вес общий, кг</th>
                     <th>Цена, руб/м2</th>
+                    <th>Кол-во, м2</th>
                     <th>Сумма, руб.</th>
                   </tr>
                 </thead>
@@ -916,16 +913,13 @@ function renderEnclosingOverview(
                     <tr key={row.key}>
                       <td>{row.mark}</td>
                       <td>{row.workingWidthMm}</td>
-                      <td>{row.unit}</td>
                       <td>{row.thicknessMm}</td>
                       <td>{formatNumber(row.panelLengthM, 2)}</td>
                       <td>{formatNumber(row.panelsCount, 0)}</td>
-                      <td>{row.standard}</td>
-                      <td>{formatNumber(row.densityKgPerM3, 0)}</td>
-                      <td>{formatNumber(row.areaM2, 2)}</td>
                       <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
                       <td>{formatNumber(row.totalMassKg, 2)}</td>
                       <td>{formatRub(row.unitPriceRubPerM2)}</td>
+                      <td>{formatNumber(row.areaM2, 2)}</td>
                       <td>{formatRub(row.totalRub)}</td>
                     </tr>
                   ))}
