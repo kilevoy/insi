@@ -20,6 +20,7 @@ const FACING_STEEL_THICKNESS_M = 0.0005
 const PANEL_WORKING_WIDTH_M = 1
 
 const ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2 = 500
+const STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2 = 1559.76
 
 const HARPOON_PANEL_FASTENER_PRICE_RUB_BY_LENGTH_MM: Record<number, number> = {
   105: 39.1,
@@ -495,7 +496,7 @@ function buildClassSpecification(params: {
       `Стартовая планка (опорный элемент ФИУ6хA, t=${WALL_STARTER_FIU6_THICKNESS_MM.toFixed(1).replace('.', ',')} мм, узел 1.3.4, АТР ТСП)`,
       perimeterM,
       resolveDevelopedWidthByThickness(WALL_STARTER_FIU6_DEV_WIDTH_M_BY_THICKNESS, params.input.wallPanelThicknessMm),
-      params.derivedAccessoryPriceRubPerM2,
+      STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2 * enclosingAccessoriesReference.flatSheetMultiplier,
     ),
     calcAccessoryRow(
       `${params.classKey}-walls-joint-cover`,
@@ -745,6 +746,7 @@ export function calculateEnclosing(rawInput: EnclosingInputRaw): EnclosingCalcul
   const notes: string[] = [
     'Panel quantities are calculated by an enlarged layout scheme.',
     `Accessories are calculated by price formula: flat sheet price x ${enclosingAccessoriesReference.flatSheetMultiplier} (base ${ACCESSORY_BASE_FLAT_SHEET_PRICE_RUB_PER_M2} RUB/m2).`,
+    `Starter strip ФИУ6хA uses flat sheet t=2.0 mm price (${STARTER_BASE_FLAT_SHEET_2MM_PRICE_RUB_PER_M2.toFixed(2)} RUB/m2) x ${enclosingAccessoriesReference.flatSheetMultiplier}.`,
     'Accessories are priced per m2 according to the TSP price formula.',
     'Sealants are added from price list №12.5 (lock gasket and roof profile gaskets).',
     'Wall accessories include panel joints, outer corners and socle drip (no openings considered).',
