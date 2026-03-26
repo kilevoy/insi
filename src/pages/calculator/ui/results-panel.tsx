@@ -82,6 +82,16 @@ function formatRub(value: number): string {
   return `${Math.round(value).toLocaleString('ru-RU')}`
 }
 
+function isSandwichPanelCovering(covering: string): boolean {
+  const normalized = covering.trim().toLowerCase()
+  return (
+    normalized.includes('с-п') ||
+    normalized.includes('с п') ||
+    normalized.includes('сэндвич') ||
+    normalized.includes('sandwich')
+  )
+}
+
 function formatStepLimitMm(value: number, zeroLabel = 'авто'): string {
   return value > 0 ? formatNumber(value, 0) : zeroLabel
 }
@@ -749,7 +759,19 @@ function renderEnclosingOverview(
     const activeClass = enclosingResult.classes[selectedClassKey]
     const walls = activeClass.walls
     const roof = activeClass.roof
+    const includeWalls = isSandwichPanelCovering(input.wallCoveringType)
+    const includeRoof = isSandwichPanelCovering(input.roofCoveringType)
     const wallStandards = [...new Set(walls.panelSpecification.map((row) => row.standard))]
+    const wallsSectionRub = includeWalls ? walls.totals.sectionRub : 0
+    const roofSectionRub = includeRoof ? roof.totals.sectionRub : 0
+    const totalSectionRub = wallsSectionRub + roofSectionRub
+    const totalPanelMassKg =
+      (includeWalls ? walls.totals.panelMassKg : 0) + (includeRoof ? roof.totals.panelMassKg : 0)
+    const totalPanelsRub =
+      (includeWalls ? walls.totals.panelsRub : 0) + (includeRoof ? roof.totals.panelsRub : 0)
+    const totalSupportRub =
+      (includeWalls ? walls.totals.accessoriesRub + walls.totals.sealantsRub + walls.totals.fastenersRub : 0) +
+      (includeRoof ? roof.totals.accessoriesRub + roof.totals.sealantsRub + roof.totals.fastenersRub : 0)
 
     return (
       <div className="tab-pane animate-in" data-testid="enclosing-panel">
@@ -841,332 +863,359 @@ function renderEnclosingOverview(
             )}
           </div>
 
-          <div className="results-section">
-            <h3 className="results-section-title">Стены</h3>
-            <div className="load-grid load-grid--summary">
-              <div className="load-tile">
-                <span>Общая площадь, м2</span>
-                <strong>{formatNumber(enclosingResult.geometry.wallAreaGrossM2, 2)}</strong>
+          {includeWalls ? (
+            <>
+              <div className="results-section">
+                <h3 className="results-section-title">Стены</h3>
+                <div className="load-grid load-grid--summary">
+                  <div className="load-tile">
+                    <span>Общая площадь, м2</span>
+                    <strong>{formatNumber(enclosingResult.geometry.wallAreaGrossM2, 2)}</strong>
+                  </div>
+                  <div className="load-tile">
+                    <span>Площадь проемов, м2</span>
+                    <strong>{formatNumber(enclosingResult.geometry.openingsAreaM2, 2)}</strong>
+                  </div>
+                  <div className="load-tile">
+                    <span>Площадь нетто, м2</span>
+                    <strong>{formatNumber(enclosingResult.geometry.wallAreaNetM2, 2)}</strong>
+                  </div>
+                  <div className="load-tile">
+                    <span>Вес, кг</span>
+                    <strong>{formatNumber(walls.totals.panelMassKg, 2)}</strong>
+                  </div>
+                  <div className="load-tile load-tile--total">
+                    <span>Стоимость, руб.</span>
+                    <strong>{formatRub(wallsSectionRub)}</strong>
+                  </div>
+                </div>
+                <p className="results-inline-note" style={{ marginTop: 8 }}>
+                  Стеновые панели приняты в горизонтальном монтаже; рабочая ширина фиксирована 1000 мм.
+                </p>
               </div>
-              <div className="load-tile">
-                <span>Площадь проемов, м2</span>
-                <strong>{formatNumber(enclosingResult.geometry.openingsAreaM2, 2)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация стеновых панелей</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Марка</th>
+                        <th>Ширина, мм</th>
+                        <th>Толщина, мм</th>
+                        <th>Длина, м</th>
+                        <th>Штук</th>
+                        <th>Вес, кг/м2</th>
+                        <th>Вес общий, кг</th>
+                        <th>Цена, руб/м2</th>
+                        <th>Кол-во, м2</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {walls.panelSpecification.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.mark}</td>
+                          <td>{row.workingWidthMm}</td>
+                          <td>{row.thicknessMm}</td>
+                          <td>{formatNumber(row.panelLengthM, 2)}</td>
+                          <td>{formatNumber(row.panelsCount, 0)}</td>
+                          <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
+                          <td>{formatNumber(row.totalMassKg, 2)}</td>
+                          <td>{formatRub(row.unitPriceRubPerM2)}</td>
+                          <td>{formatNumber(row.areaM2, 2)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="results-inline-note" style={{ marginTop: 8 }}>
+                  Норматив: {wallStandards.join('; ')}
+                </p>
               </div>
-              <div className="load-tile">
-                <span>Площадь нетто, м2</span>
-                <strong>{formatNumber(enclosingResult.geometry.wallAreaNetM2, 2)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация комплектующих (Стены)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Требуемая длина, м.п.</th>
+                        <th>Развертка, м</th>
+                        <th>Кол-во, м2</th>
+                        <th>Цена, руб/м2</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {walls.accessories.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{formatNumber(row.requiredLengthM, 2)}</td>
+                          <td>{formatNumber(row.developedWidthM, 2)}</td>
+                          <td>{formatNumber(row.quantity, 2)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="load-tile">
-                <span>Вес, кг</span>
-                <strong>{formatNumber(walls.totals.panelMassKg, 2)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация уплотнителей (Стены)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Ед. изм.</th>
+                        <th>Кол-во</th>
+                        <th>Цена, руб/ед.</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {walls.sealants.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{row.unit}</td>
+                          <td>{formatNumber(row.quantity, 2)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="load-tile load-tile--total">
-                <span>Стоимость, руб.</span>
-                <strong>{formatRub(walls.totals.sectionRub)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация крепежа (Стены)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Длина, мм</th>
+                        <th>Кол-во, шт</th>
+                        <th>Цена, руб/шт</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {walls.fasteners.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{formatNumber(row.lengthMm, 0)}</td>
+                          <td>{formatNumber(row.quantity, 0)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+            </>
+          ) : (
+            <div className="results-section">
+              <h3 className="results-section-title">Стены</h3>
+              <p className="results-inline-note">
+                Расчет стен не выполняется: выбранное покрытие не С-П ({input.wallCoveringType}).
+              </p>
             </div>
-            <p className="results-inline-note" style={{ marginTop: 8 }}>
-              Стеновые панели приняты в горизонтальном монтаже; рабочая ширина фиксирована 1000 мм.
-            </p>
-          </div>
+          )}
 
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация стеновых панелей</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Марка</th>
-                    <th>Ширина, мм</th>
-                    <th>Толщина, мм</th>
-                    <th>Длина, м</th>
-                    <th>Штук</th>
-                    <th>Вес, кг/м2</th>
-                    <th>Вес общий, кг</th>
-                    <th>Цена, руб/м2</th>
-                    <th>Кол-во, м2</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walls.panelSpecification.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.mark}</td>
-                      <td>{row.workingWidthMm}</td>
-                      <td>{row.thicknessMm}</td>
-                      <td>{formatNumber(row.panelLengthM, 2)}</td>
-                      <td>{formatNumber(row.panelsCount, 0)}</td>
-                      <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
-                      <td>{formatNumber(row.totalMassKg, 2)}</td>
-                      <td>{formatRub(row.unitPriceRubPerM2)}</td>
-                      <td>{formatNumber(row.areaM2, 2)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="results-inline-note" style={{ marginTop: 8 }}>
-              Норматив: {wallStandards.join('; ')}
-            </p>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация комплектующих (Стены)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Требуемая длина, м.п.</th>
-                    <th>Развертка, м</th>
-                    <th>Кол-во, м2</th>
-                    <th>Цена, руб/м2</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walls.accessories.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{formatNumber(row.requiredLengthM, 2)}</td>
-                      <td>{formatNumber(row.developedWidthM, 2)}</td>
-                      <td>{formatNumber(row.quantity, 2)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация уплотнителей (Стены)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Ед. изм.</th>
-                    <th>Кол-во</th>
-                    <th>Цена, руб/ед.</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walls.sealants.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{row.unit}</td>
-                      <td>{formatNumber(row.quantity, 2)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация крепежа (Стены)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Длина, мм</th>
-                    <th>Кол-во, шт</th>
-                    <th>Цена, руб/шт</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {walls.fasteners.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{formatNumber(row.lengthMm, 0)}</td>
-                      <td>{formatNumber(row.quantity, 0)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Кровля</h3>
-            <div className="load-grid load-grid--summary">
-              <div className="load-tile">
-                <span>Общая площадь, м2</span>
-                <strong>{formatNumber(enclosingResult.geometry.roofAreaM2, 2)}</strong>
+          {includeRoof ? (
+            <>
+              <div className="results-section">
+                <h3 className="results-section-title">Кровля</h3>
+                <div className="load-grid load-grid--summary">
+                  <div className="load-tile">
+                    <span>Общая площадь, м2</span>
+                    <strong>{formatNumber(enclosingResult.geometry.roofAreaM2, 2)}</strong>
+                  </div>
+                  <div className="load-tile">
+                    <span>Вес, кг</span>
+                    <strong>{formatNumber(roof.totals.panelMassKg, 2)}</strong>
+                  </div>
+                  <div className="load-tile load-tile--total">
+                    <span>Стоимость, руб.</span>
+                    <strong>{formatRub(roofSectionRub)}</strong>
+                  </div>
+                </div>
               </div>
-              <div className="load-tile">
-                <span>Вес, кг</span>
-                <strong>{formatNumber(roof.totals.panelMassKg, 2)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация кровельных панелей</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Марка</th>
+                        <th>Ширина, мм</th>
+                        <th>Толщина, мм</th>
+                        <th>Длина, м</th>
+                        <th>Штук</th>
+                        <th>Вес, кг/м2</th>
+                        <th>Вес общий, кг</th>
+                        <th>Цена, руб/м2</th>
+                        <th>Кол-во, м2</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roof.panelSpecification.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.mark}</td>
+                          <td>{row.workingWidthMm}</td>
+                          <td>{row.thicknessMm}</td>
+                          <td>{formatNumber(row.panelLengthM, 2)}</td>
+                          <td>{formatNumber(row.panelsCount, 0)}</td>
+                          <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
+                          <td>{formatNumber(row.totalMassKg, 2)}</td>
+                          <td>{formatRub(row.unitPriceRubPerM2)}</td>
+                          <td>{formatNumber(row.areaM2, 2)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="load-tile load-tile--total">
-                <span>Стоимость, руб.</span>
-                <strong>{formatRub(roof.totals.sectionRub)}</strong>
+
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация комплектующих (Кровля)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Требуемая длина, м.п.</th>
+                        <th>Развертка, м</th>
+                        <th>Кол-во, м2</th>
+                        <th>Цена, руб/м2</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roof.accessories.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{formatNumber(row.requiredLengthM, 2)}</td>
+                          <td>{formatNumber(row.developedWidthM, 2)}</td>
+                          <td>{formatNumber(row.quantity, 2)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация кровельных панелей</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Марка</th>
-                    <th>Ширина, мм</th>
-                    <th>Толщина, мм</th>
-                    <th>Длина, м</th>
-                    <th>Штук</th>
-                    <th>Вес, кг/м2</th>
-                    <th>Вес общий, кг</th>
-                    <th>Цена, руб/м2</th>
-                    <th>Кол-во, м2</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roof.panelSpecification.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.mark}</td>
-                      <td>{row.workingWidthMm}</td>
-                      <td>{row.thicknessMm}</td>
-                      <td>{formatNumber(row.panelLengthM, 2)}</td>
-                      <td>{formatNumber(row.panelsCount, 0)}</td>
-                      <td>{formatNumber(row.unitMassKgPerM2, 2)}</td>
-                      <td>{formatNumber(row.totalMassKg, 2)}</td>
-                      <td>{formatRub(row.unitPriceRubPerM2)}</td>
-                      <td>{formatNumber(row.areaM2, 2)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация уплотнителей (Кровля)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Ед. изм.</th>
+                        <th>Кол-во</th>
+                        <th>Цена, руб/ед.</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roof.sealants.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{row.unit}</td>
+                          <td>{formatNumber(row.quantity, 2)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация комплектующих (Кровля)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Требуемая длина, м.п.</th>
-                    <th>Развертка, м</th>
-                    <th>Кол-во, м2</th>
-                    <th>Цена, руб/м2</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roof.accessories.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{formatNumber(row.requiredLengthM, 2)}</td>
-                      <td>{formatNumber(row.developedWidthM, 2)}</td>
-                      <td>{formatNumber(row.quantity, 2)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="results-section">
+                <h3 className="results-section-title">Спецификация крепежа (Кровля)</h3>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Наименование</th>
+                        <th>Длина, мм</th>
+                        <th>Кол-во, шт</th>
+                        <th>Цена, руб/шт</th>
+                        <th>Сумма, руб.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roof.fasteners.map((row) => (
+                        <tr key={row.key}>
+                          <td>{row.item}</td>
+                          <td>{formatNumber(row.lengthMm, 0)}</td>
+                          <td>{formatNumber(row.quantity, 0)}</td>
+                          <td>{formatRub(row.unitPriceRub)}</td>
+                          <td>{formatRub(row.totalRub)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="results-section">
+              <h3 className="results-section-title">Кровля</h3>
+              <p className="results-inline-note">
+                Расчет кровли не выполняется: выбранное покрытие не С-П ({input.roofCoveringType}).
+              </p>
             </div>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация уплотнителей (Кровля)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Ед. изм.</th>
-                    <th>Кол-во</th>
-                    <th>Цена, руб/ед.</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roof.sealants.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{row.unit}</td>
-                      <td>{formatNumber(row.quantity, 2)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="results-section">
-            <h3 className="results-section-title">Спецификация крепежа (Кровля)</h3>
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Наименование</th>
-                    <th>Длина, мм</th>
-                    <th>Кол-во, шт</th>
-                    <th>Цена, руб/шт</th>
-                    <th>Сумма, руб.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roof.fasteners.map((row) => (
-                    <tr key={row.key}>
-                      <td>{row.item}</td>
-                      <td>{formatNumber(row.lengthMm, 0)}</td>
-                      <td>{formatNumber(row.quantity, 0)}</td>
-                      <td>{formatRub(row.unitPriceRub)}</td>
-                      <td>{formatRub(row.totalRub)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
 
           <div className="results-section">
             <h3 className="results-section-title">Итого ограждающие конструкции</h3>
             <div className="summary-hero">
               <div className="summary-metric-card summary-metric-card--accent">
                 <span>{`${activeClass.label}: стоимость`}</span>
-                <strong>{`${formatRub(activeClass.totals.classRub)} руб.`}</strong>
+                <strong>{`${formatRub(totalSectionRub)} руб.`}</strong>
               </div>
               <div className="summary-metric-card">
                 <span>Стены, руб.</span>
-                <strong>{formatRub(walls.totals.sectionRub)}</strong>
+                <strong>{includeWalls ? formatRub(wallsSectionRub) : '—'}</strong>
               </div>
               <div className="summary-metric-card">
                 <span>Кровля, руб.</span>
-                <strong>{formatRub(roof.totals.sectionRub)}</strong>
+                <strong>{includeRoof ? formatRub(roofSectionRub) : '—'}</strong>
               </div>
               <div className="summary-metric-card">
                 <span>Вес панелей, кг</span>
-                <strong>{formatNumber(activeClass.totals.panelMassKg, 2)}</strong>
+                <strong>{formatNumber(totalPanelMassKg, 2)}</strong>
               </div>
               <div className="summary-metric-card">
                 <span>Панели, руб.</span>
-                <strong>{formatRub(activeClass.totals.panelsRub)}</strong>
+                <strong>{formatRub(totalPanelsRub)}</strong>
               </div>
               <div className="summary-metric-card">
                 <span>Комплектующие + уплотнители + крепеж, руб.</span>
-                <strong>{formatRub(activeClass.totals.accessoriesRub + activeClass.totals.sealantsRub + activeClass.totals.fastenersRub)}</strong>
+                <strong>{formatRub(totalSupportRub)}</strong>
               </div>
             </div>
+            {!includeWalls && !includeRoof && (
+              <p className="results-inline-note" style={{ marginTop: 8 }}>
+                Для расчета ограждающих выберите покрытие типа С-П для стен и/или кровли.
+              </p>
+            )}
           </div>
 
           {enclosingResult.notes.length > 0 && (
