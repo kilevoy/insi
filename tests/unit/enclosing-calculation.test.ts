@@ -18,19 +18,22 @@ describe('enclosing calculation', () => {
     expect(result.geometry.wallAreaNetM2).toBeCloseTo(1521.27, 2)
     expect(result.geometry.roofAreaM2).toBeCloseTo(1447.93, 2)
 
-    expect(result.scenarios).toHaveLength(2)
-    expect(result.scenarios[0]?.wall.unitPriceRubPerM2).toBe(3905)
-    expect(result.scenarios[0]?.roof.unitPriceRubPerM2).toBe(4705)
-    expect(result.scenarios[0]?.panelsTotalRub).toBe(12753079)
+    expect(result.specificationRows).toHaveLength(4)
+    expect(result.specificationRows[0]?.panelType).toContain('Стеновая')
+    expect(result.specificationRows[0]?.mark).toBe('МП ТСП-Z')
+    expect(result.specificationRows[0]?.workingWidthMm).toBe('1000 / 1160 / 1190')
+    expect(result.specificationRows[0]?.unit).toBe('м2')
+    expect(result.specificationRows[0]?.unitPriceRubPerM2).toBe(3905)
+    expect(result.specificationRows[0]?.totalRub).toBe(5940559)
+    expect(result.specificationRows[1]?.unitPriceRubPerM2).toBe(4705)
+    expect(result.specificationRows[1]?.totalRub).toBe(6812520)
 
-    expect(result.scenarios[1]?.wall.unitPriceRubPerM2).toBe(3425)
-    expect(result.scenarios[1]?.roof.unitPriceRubPerM2).toBe(4080)
-    expect(result.scenarios[1]?.panelsTotalRub).toBe(11117912)
+    expect(result.totals.class1Rub).toBe(12753079)
+    expect(result.totals.class2Rub).toBe(11117912)
 
     expect(result.fasteners.metal.wallZLock.lengthMm).toBe(140)
     expect(result.fasteners.metal.roofK.lengthMm).toBe(240)
-    expect(result.fasteners.concrete.wallZLock.diameterAndLength).toBe('6.3x155')
-    expect(result.fasteners.concrete.roofK.diameterAndLength).toBe('6.3x255')
+    expect((result.fasteners as Record<string, unknown>).concrete).toBeUndefined()
   })
 
   it('maps unified input to enclosing input and resolves openings area', () => {
@@ -67,9 +70,9 @@ describe('enclosing calculation', () => {
       openingsAreaM2: 0,
     })
 
-    const class2 = result.scenarios.find((scenario) => scenario.key === 'class-2-tu')
-    expect(class2?.roof.resolvedThicknessMm).toBe(80)
-    expect(class2?.notes.some((note) => note.includes('80'))).toBe(true)
+    const class2RoofRow = result.specificationRows.find((row) => row.key === 'class-2-tu-roof-k')
+    expect(class2RoofRow?.thicknessMm).toBe(80)
+    expect(result.notes.some((note) => note.includes('80'))).toBe(true)
   })
 
   it('supports unified input versions without opening fields', () => {

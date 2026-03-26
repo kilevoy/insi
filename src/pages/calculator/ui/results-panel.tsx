@@ -706,8 +706,6 @@ function renderEnclosingOverview(input: UnifiedInputState) {
   try {
     const enclosingInput = mapUnifiedInputToEnclosingInput(input)
     const enclosingResult = calculateEnclosing(enclosingInput)
-    const class1 = enclosingResult.scenarios.find((scenario) => scenario.key === 'class-1-gost')
-    const class2 = enclosingResult.scenarios.find((scenario) => scenario.key === 'class-2-tu')
 
     return (
       <div className="tab-pane animate-in" data-testid="enclosing-panel">
@@ -716,7 +714,7 @@ function renderEnclosingOverview(input: UnifiedInputState) {
             <div>
               <h3 className="results-section-title">Ограждающие конструкции</h3>
               <p className="results-inline-note" style={{ marginTop: 6 }}>
-                Сценарный расчет по прайсу ТСП (стр. 28) для панелей МП ТСП-Z и МП ТСП-К, без SECRET FIX.
+                Спецификация по прайсу ТСП (стр. 28) для панелей МП ТСП-Z и МП ТСП-К, без SECRET FIX.
               </p>
             </div>
             <button className="results-print-action" onClick={() => window.print()}>
@@ -727,11 +725,11 @@ function renderEnclosingOverview(input: UnifiedInputState) {
           <div className="summary-hero">
             <div className="summary-metric-card summary-metric-card--accent">
               <span>Класс 1 (ГОСТ)</span>
-              <strong>{class1 ? `${formatRub(class1.panelsTotalRub)} руб.` : '-'}</strong>
+              <strong>{`${formatRub(enclosingResult.totals.class1Rub)} руб.`}</strong>
             </div>
             <div className="summary-metric-card">
               <span>Класс 2 (стены ГОСТ / кровля ТУ)</span>
-              <strong>{class2 ? `${formatRub(class2.panelsTotalRub)} руб.` : '-'}</strong>
+              <strong>{`${formatRub(enclosingResult.totals.class2Rub)} руб.`}</strong>
             </div>
             <div className="summary-metric-card">
               <span>Площадь стен (нетто)</span>
@@ -771,28 +769,38 @@ function renderEnclosingOverview(input: UnifiedInputState) {
           </div>
 
           <div className="results-section">
-            <h3 className="results-section-title">Панели: сценарии и стоимость</h3>
+            <h3 className="results-section-title">Спецификация панелей</h3>
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Сценарий</th>
-                    <th>Стены, мм</th>
-                    <th>Стены, руб/м2</th>
-                    <th>Кровля, мм</th>
-                    <th>Кровля, руб/м2</th>
-                    <th>Итого панели, руб.</th>
+                    <th>Класс</th>
+                    <th>Тип</th>
+                    <th>Марка</th>
+                    <th>Ширина, мм</th>
+                    <th>Ед. изм.</th>
+                    <th>Толщина, мм</th>
+                    <th>Норматив</th>
+                    <th>Плотность, кг/м3</th>
+                    <th>Объем, м2</th>
+                    <th>Цена, руб/м2</th>
+                    <th>Сумма, руб.</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {enclosingResult.scenarios.map((scenario) => (
-                    <tr key={scenario.key}>
-                      <td>{scenario.title}</td>
-                      <td>{scenario.wall.resolvedThicknessMm}</td>
-                      <td>{formatRub(scenario.wall.unitPriceRubPerM2)}</td>
-                      <td>{scenario.roof.resolvedThicknessMm}</td>
-                      <td>{formatRub(scenario.roof.unitPriceRubPerM2)}</td>
-                      <td>{formatRub(scenario.panelsTotalRub)}</td>
+                  {enclosingResult.specificationRows.map((row) => (
+                    <tr key={row.key}>
+                      <td>{row.classLabel}</td>
+                      <td>{row.panelType}</td>
+                      <td>{row.mark}</td>
+                      <td>{row.workingWidthMm}</td>
+                      <td>{row.unit}</td>
+                      <td>{row.thicknessMm}</td>
+                      <td>{row.standard}</td>
+                      <td>{formatNumber(row.densityKgPerM3, 0)}</td>
+                      <td>{formatNumber(row.areaM2, 2)}</td>
+                      <td>{formatRub(row.unitPriceRubPerM2)}</td>
+                      <td>{formatRub(row.totalRub)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -815,23 +823,6 @@ function renderEnclosingOverview(input: UnifiedInputState) {
               </div>
               <p className="results-inline-note" style={{ marginTop: 10 }}>
                 {enclosingResult.fasteners.metal.source}
-              </p>
-            </div>
-
-            <div className="results-section">
-              <h3 className="results-section-title">Крепеж по бетону</h3>
-              <div className="load-grid load-grid--summary" style={{ marginTop: 10 }}>
-                <div className="load-tile">
-                  <span>Стеновая Z-LOCK</span>
-                  <strong>{enclosingResult.fasteners.concrete.wallZLock.diameterAndLength}</strong>
-                </div>
-                <div className="load-tile">
-                  <span>Кровельная ТСП-К</span>
-                  <strong>{enclosingResult.fasteners.concrete.roofK.diameterAndLength}</strong>
-                </div>
-              </div>
-              <p className="results-inline-note" style={{ marginTop: 10 }}>
-                {enclosingResult.fasteners.concrete.source}
               </p>
             </div>
           </div>

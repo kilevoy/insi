@@ -1,16 +1,14 @@
 import { enclosingInputSchema, type EnclosingInput } from './enclosing-input'
 import type {
   EnclosingCalculationResult,
-  EnclosingFastenerConcreteSelection,
   EnclosingFastenerMetalSelection,
-  EnclosingScenarioResult,
+  EnclosingSpecificationRow,
 } from './enclosing-output'
 import {
-  ENCLOSING_SCENARIO_KEYS,
+  ENCLOSING_CLASS_KEYS,
   enclosingAccessoriesReference,
   enclosingFastenerReference,
   enclosingPanelPriceRubPerM2,
-  type EnclosingScenarioKey,
 } from './enclosing-reference.generated'
 
 function toRadians(degrees: number): number {
@@ -95,72 +93,71 @@ function resolveFastenerMetal(
   }
 }
 
-function resolveFastenerConcrete(
-  table: Record<number, string>,
-  requestedThicknessMm: number,
-): EnclosingFastenerConcreteSelection {
-  const thicknesses = Object.keys(table).map(Number)
-  const resolvedThicknessMm = table[requestedThicknessMm]
-    ? requestedThicknessMm
-    : resolveNearestThickness(thicknesses, requestedThicknessMm)
-
-  return {
-    requestedThicknessMm,
-    resolvedThicknessMm,
-    diameterAndLength: table[resolvedThicknessMm] ?? '',
-  }
-}
-
-function buildScenario(
-  scenarioKey: EnclosingScenarioKey,
+function buildSpecificationRows(
   requestedWallThicknessMm: number,
   requestedRoofThicknessMm: number,
   wallAreaNetM2: number,
   roofAreaM2: number,
-): EnclosingScenarioResult {
-  const catalog = enclosingPanelPriceRubPerM2[scenarioKey]
-  const wall = resolvePricedThickness(catalog.wallZLock, requestedWallThicknessMm)
-  const roof = resolvePricedThickness(catalog.roofK, requestedRoofThicknessMm)
-
-  const wallTotalRub = roundRub(wallAreaNetM2 * wall.unitPriceRubPerM2)
-  const roofTotalRub = roundRub(roofAreaM2 * roof.unitPriceRubPerM2)
+): { rows: EnclosingSpecificationRow[]; notes: string[] } {
+  const rows: EnclosingSpecificationRow[] = []
   const notes: string[] = []
 
-  if (wall.requestedThicknessMm !== wall.resolvedThicknessMm) {
-    notes.push(
-      `Толщина стеновой панели ${wall.requestedThicknessMm} мм не найдена в прайсе, использована ближайшая ${wall.resolvedThicknessMm} мм.`,
-    )
-  }
+  for (const classKey of ENCLOSING_CLASS_KEYS) {
+    const catalog = enclosingPanelPriceRubPerM2[classKey]
+    const wall = resolvePricedThickness(catalog.wallZLock, requestedWallThicknessMm)
+    const roof = resolvePricedThickness(catalog.roofK, requestedRoofThicknessMm)
 
-  if (roof.requestedThicknessMm !== roof.resolvedThicknessMm) {
-    notes.push(
-      `Толщина кровельной панели ${roof.requestedThicknessMm} мм не найдена в прайсе, использована ближайшая ${roof.resolvedThicknessMm} мм.`,
-    )
-  }
+    const classLabel = classKey === 'class-1-gost' ? 'Класс 1' : 'Класс 2'
+    const wallStandard = classKey === 'class-1-gost' ? 'ГОСТ 32603-2021, класс 1' : 'ГОСТ 32603-2021, класс 2'
+    const roofStandard =
+      classKey === 'class-1-gost' ? 'ГОСТ 32603-2021, класс 1' : 'ТУ 5284-001-37144780-2012'
+    const densityKgPerM3 = classKey === 'class-1-gost' ? 105 : 95
 
-  return {
-    key: scenarioKey,
-    title:
-      scenarioKey === 'class-1-gost'
-        ? 'Класс 1 (ГОСТ 32603-2021)'
-        : 'Класс 2 (стены ГОСТ, кровля ТУ 5284-001-37144780-2012)',
-    wall: {
-      requestedThicknessMm: wall.requestedThicknessMm,
-      resolvedThicknessMm: wall.resolvedThicknessMm,
+    if (wall.requestedThicknessMm !== wall.resolvedThicknessMm) {
+      notes.push(
+        `Для ${classLabel.toLowerCase()} стеновая толщина ${wall.requestedThicknessMm} мм заменена на ближайшую ${wall.resolvedThicknessMm} мм.`,
+      )
+    }
+    if (roof.requestedThicknessMm !== roof.resolvedThicknessMm) {
+      notes.push(
+        `Для ${classLabel.toLowerCase()} кровельная толщина ${roof.requestedThicknessMm} мм заменена на ближайшую ${roof.resolvedThicknessMm} мм.`,
+      )
+    }
+
+    rows.push({
+      key: `${classKey}-wall-zlock`,
+      classKey,
+      classLabel,
+      panelType: 'Стеновая трехслойная сэндвич-панель с видимым креплением Z-Lock',
+      mark: 'МП ТСП-Z',
+      workingWidthMm: '1000 / 1160 / 1190',
+      unit: 'м2',
+      thicknessMm: wall.resolvedThicknessMm,
+      standard: wallStandard,
+      densityKgPerM3,
       areaM2: wallAreaNetM2,
       unitPriceRubPerM2: wall.unitPriceRubPerM2,
-      totalRub: wallTotalRub,
-    },
-    roof: {
-      requestedThicknessMm: roof.requestedThicknessMm,
-      resolvedThicknessMm: roof.resolvedThicknessMm,
+      totalRub: roundRub(wallAreaNetM2 * wall.unitPriceRubPerM2),
+    })
+
+    rows.push({
+      key: `${classKey}-roof-k`,
+      classKey,
+      classLabel,
+      panelType: 'Кровельная трехслойная сэндвич-панель',
+      mark: 'МП ТСП-К',
+      workingWidthMm: '1000',
+      unit: 'м2',
+      thicknessMm: roof.resolvedThicknessMm,
+      standard: roofStandard,
+      densityKgPerM3,
       areaM2: roofAreaM2,
       unitPriceRubPerM2: roof.unitPriceRubPerM2,
-      totalRub: roofTotalRub,
-    },
-    panelsTotalRub: wallTotalRub + roofTotalRub,
-    notes,
+      totalRub: roundRub(roofAreaM2 * roof.unitPriceRubPerM2),
+    })
   }
+
+  return { rows, notes }
 }
 
 export function calculateEnclosing(rawInput: EnclosingInput): EnclosingCalculationResult {
@@ -171,9 +168,19 @@ export function calculateEnclosing(rawInput: EnclosingInput): EnclosingCalculati
   const openingsAreaM2 = Math.max(0, input.openingsAreaM2)
   const wallAreaNetM2 = Math.max(0, wallAreaGrossM2 - openingsAreaM2)
 
-  const scenarios = ENCLOSING_SCENARIO_KEYS.map((scenarioKey) =>
-    buildScenario(scenarioKey, input.wallPanelThicknessMm, input.roofPanelThicknessMm, wallAreaNetM2, roofAreaM2),
+  const { rows: specificationRows, notes } = buildSpecificationRows(
+    input.wallPanelThicknessMm,
+    input.roofPanelThicknessMm,
+    wallAreaNetM2,
+    roofAreaM2,
   )
+
+  const class1Rub = specificationRows
+    .filter((row) => row.classKey === 'class-1-gost')
+    .reduce((sum, row) => sum + row.totalRub, 0)
+  const class2Rub = specificationRows
+    .filter((row) => row.classKey === 'class-2-tu')
+    .reduce((sum, row) => sum + row.totalRub, 0)
 
   const metalWall = resolveFastenerMetal(
     enclosingFastenerReference.metalHarpoonToSteelUpTo12_5mm.wallZLockLengthMmByThickness,
@@ -183,16 +190,7 @@ export function calculateEnclosing(rawInput: EnclosingInput): EnclosingCalculati
     enclosingFastenerReference.metalHarpoonToSteelUpTo12_5mm.roofKLengthMmByThickness,
     input.roofPanelThicknessMm,
   )
-  const concreteWall = resolveFastenerConcrete(
-    enclosingFastenerReference.concreteHarpoon.wallZLockDiameterAndLengthByThickness,
-    input.wallPanelThicknessMm,
-  )
-  const concreteRoof = resolveFastenerConcrete(
-    enclosingFastenerReference.concreteHarpoon.roofKDiameterAndLengthByThickness,
-    input.roofPanelThicknessMm,
-  )
 
-  const notes = scenarios.flatMap((scenario) => scenario.notes)
   if (metalWall.requestedThicknessMm !== metalWall.resolvedThicknessMm) {
     notes.push(
       `Для крепежа по металлу стен использована ближайшая толщина ${metalWall.resolvedThicknessMm} мм вместо ${metalWall.requestedThicknessMm} мм.`,
@@ -203,21 +201,11 @@ export function calculateEnclosing(rawInput: EnclosingInput): EnclosingCalculati
       `Для крепежа по металлу кровли использована ближайшая толщина ${metalRoof.resolvedThicknessMm} мм вместо ${metalRoof.requestedThicknessMm} мм.`,
     )
   }
-  if (concreteWall.requestedThicknessMm !== concreteWall.resolvedThicknessMm) {
-    notes.push(
-      `Для крепежа по бетону стен использована ближайшая толщина ${concreteWall.resolvedThicknessMm} мм вместо ${concreteWall.requestedThicknessMm} мм.`,
-    )
-  }
-  if (concreteRoof.requestedThicknessMm !== concreteRoof.resolvedThicknessMm) {
-    notes.push(
-      `Для крепежа по бетону кровли использована ближайшая толщина ${concreteRoof.resolvedThicknessMm} мм вместо ${concreteRoof.requestedThicknessMm} мм.`,
-    )
-  }
 
   return {
     snapshot: {
       sourceWorkbook: 'Прайс-лист №12.1 40 55 (14.08.2025), стр. 28',
-      sourceSheets: ['Панели МВ (класс 1/класс 2)', 'Метизы (табл. 18, 22 техкаталога 22.07.2025)'],
+      sourceSheets: ['Панели МВ (класс 1/класс 2)', 'Метизы (табл. 18 техкаталога 22.07.2025)'],
       status: 'in-progress',
       note: 'SECRET FIX исключен из расчета в соответствии с заданием.',
     },
@@ -227,17 +215,16 @@ export function calculateEnclosing(rawInput: EnclosingInput): EnclosingCalculati
       roofAreaM2,
       openingsAreaM2,
     },
-    scenarios,
+    specificationRows,
+    totals: {
+      class1Rub,
+      class2Rub,
+    },
     fasteners: {
       metal: {
         source: 'Harpoon, табл. 18: крепление к подконструкциям до 12.5 мм',
         wallZLock: metalWall,
         roofK: metalRoof,
-      },
-      concrete: {
-        source: 'Harpoon, табл. 22: саморезы по бетону',
-        wallZLock: concreteWall,
-        roofK: concreteRoof,
       },
     },
     accessories: {

@@ -1,32 +1,25 @@
-import type { EnclosingScenarioKey } from './enclosing-reference.generated'
+import type { EnclosingClassKey } from './enclosing-reference.generated'
 
-export interface EnclosingPanelScenarioLine {
-  requestedThicknessMm: number
-  resolvedThicknessMm: number
+export interface EnclosingSpecificationRow {
+  key: string
+  classKey: EnclosingClassKey
+  classLabel: string
+  panelType: string
+  mark: string
+  workingWidthMm: string
+  unit: string
+  thicknessMm: number
+  standard: string
+  densityKgPerM3: number
   areaM2: number
   unitPriceRubPerM2: number
   totalRub: number
-}
-
-export interface EnclosingScenarioResult {
-  key: EnclosingScenarioKey
-  title: string
-  wall: EnclosingPanelScenarioLine
-  roof: EnclosingPanelScenarioLine
-  panelsTotalRub: number
-  notes: string[]
 }
 
 export interface EnclosingFastenerMetalSelection {
   requestedThicknessMm: number
   resolvedThicknessMm: number
   lengthMm: number
-}
-
-export interface EnclosingFastenerConcreteSelection {
-  requestedThicknessMm: number
-  resolvedThicknessMm: number
-  diameterAndLength: string
 }
 
 export interface EnclosingCalculationResult {
@@ -42,17 +35,16 @@ export interface EnclosingCalculationResult {
     roofAreaM2: number
     openingsAreaM2: number
   }
-  scenarios: EnclosingScenarioResult[]
+  specificationRows: EnclosingSpecificationRow[]
+  totals: {
+    class1Rub: number
+    class2Rub: number
+  }
   fasteners: {
     metal: {
       source: string
       wallZLock: EnclosingFastenerMetalSelection
       roofK: EnclosingFastenerMetalSelection
-    }
-    concrete: {
-      source: string
-      wallZLock: EnclosingFastenerConcreteSelection
-      roofK: EnclosingFastenerConcreteSelection
     }
   }
   accessories: {

@@ -1,9 +1,9 @@
-export const ENCLOSING_SCENARIO_KEYS = ['class-1-gost', 'class-2-tu'] as const
+export const ENCLOSING_CLASS_KEYS = ['class-1-gost', 'class-2-tu'] as const
 
-export type EnclosingScenarioKey = (typeof ENCLOSING_SCENARIO_KEYS)[number]
+export type EnclosingClassKey = (typeof ENCLOSING_CLASS_KEYS)[number]
 
 export const enclosingPanelPriceRubPerM2: Record<
-  EnclosingScenarioKey,
+  EnclosingClassKey,
   {
     wallZLock: Record<number, number>
     roofK: Record<number, number>
@@ -83,31 +83,6 @@ export const enclosingFastenerReference = {
       180: 285,
       200: 285,
       250: 350,
-    },
-  },
-  concreteHarpoon: {
-    wallZLockDiameterAndLengthByThickness: {
-      50: '6.3x105',
-      60: '6.3x105',
-      80: '6.3x135',
-      100: '6.3x155',
-      120: '6.3x175',
-      150: '6.3x205',
-      170: '6.3x255',
-      180: '6.3x255',
-      200: '6.3x255',
-      250: '6.3x305',
-    },
-    roofKDiameterAndLengthByThickness: {
-      50: '6.3x155',
-      60: '6.3x155',
-      80: '6.3x175',
-      100: '6.3x205',
-      120: '6.3x255',
-      150: '6.3x255',
-      170: '6.3x305',
-      180: '6.3x305',
-      200: '6.3x305',
     },
   },
 } as const
