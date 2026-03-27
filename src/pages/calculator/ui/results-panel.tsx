@@ -567,7 +567,7 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
   )
 }
 
-function renderTrussOverview(trussResult: TrussCalculationResult | null) {
+function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS345PriceRubPerKg: number) {
   if (!trussResult) {
     return (
       <div className="tab-pane animate-in">
@@ -581,6 +581,24 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null) {
         </div>
       </div>
     )
+  }
+
+  const resolveBraceCountForGroup = (groupKey: string, spanM: number): number | null => {
+    if (groupKey === 'orb' || groupKey === 'or') {
+      return 4
+    }
+
+    if (groupKey === 'rr') {
+      if (Math.abs(spanM - 18) < 0.01) {
+        return 4
+      }
+      if (Math.abs(spanM - 24) < 0.01) {
+        return 8
+      }
+      return 12
+    }
+
+    return null
   }
 
   const groups = [trussResult.groups.vp, trussResult.groups.np, trussResult.groups.orb, trussResult.groups.or, trussResult.groups.rr]
@@ -637,23 +655,31 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null) {
               <tr>
                 <th>Группа</th>
                 <th>Марка</th>
+                <th>Кол-во раскосов, шт.</th>
                 <th>К-т использования</th>
                 <th>Масса, кг</th>
+                <th>Стоимость, руб.</th>
                 <th>Проверка</th>
                 <th>Статус</th>
               </tr>
             </thead>
             <tbody>
-              {groups.map((group) => (
-                <tr key={group.key}>
-                  <td>{group.label}</td>
-                  <td>{group.profile ?? '—'}</td>
-                  <td>{group.utilization === null ? '—' : formatNumber(group.utilization, 6)}</td>
-                  <td>{group.massKg === null ? '—' : formatNumber(group.massKg, 3)}</td>
-                  <td>{group.criterion ?? '—'}</td>
-                  <td>{group.status === 'ok' ? 'ОК' : 'Нет подходящего профиля'}</td>
-                </tr>
-              ))}
+              {groups.map((group) => {
+                const braceCount = resolveBraceCountForGroup(group.key, trussResult.loadSummary.spanM)
+
+                return (
+                  <tr key={group.key}>
+                    <td>{group.label}</td>
+                    <td>{group.profile ?? '—'}</td>
+                    <td>{braceCount === null ? '—' : formatNumber(braceCount, 0)}</td>
+                    <td>{group.utilization === null ? '—' : formatNumber(group.utilization, 6)}</td>
+                    <td>{group.massKg === null ? '—' : formatNumber(group.massKg, 3)}</td>
+                    <td>{group.massKg === null ? '—' : formatRub(group.massKg * tubeS345PriceRubPerKg)}</td>
+                    <td>{group.criterion ?? '—'}</td>
+                    <td>{group.status === 'ok' ? 'ОК' : 'Нет подходящего профиля'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -665,6 +691,12 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null) {
           <div className="summary-metric-card summary-metric-card--accent">
             <span>Масса фермы</span>
             <strong>{trussResult.totalMassKg === null ? '—' : `${formatNumber(trussResult.totalMassKg, 3)} кг`}</strong>
+          </div>
+          <div className="summary-metric-card">
+            <span>Стоимость фермы</span>
+            <strong>
+              {trussResult.totalMassKg === null ? '—' : `${formatRub(trussResult.totalMassKg * tubeS345PriceRubPerKg)} руб.`}
+            </strong>
           </div>
           <div className="summary-metric-card">
             <span>Удельная масса</span>
@@ -726,11 +758,12 @@ function renderGeneralSpecificationOverview(
   const purlinMassKg = selectedCandidate?.totalMassKg ?? 0
   const purlinCostRub = selectedCostRub ?? 0
   const trussMassKg = trussResult?.totalMassKg ?? 0
+  const trussCostRub = trussMassKg * input.tubeS345PriceRubPerKg
 
   const combinedMassKg =
     columnMassKg + purlinMassKg + trussMassKg + enclosingMassKg
   const combinedCostRub =
-    columnCostRub + purlinCostRub + enclosingCostRub
+    columnCostRub + purlinCostRub + trussCostRub + enclosingCostRub
   const snowRegionKpa = purlinResult?.loadSummary.snowRegionKpa
   const windRegionKpa = purlinResult?.loadSummary.windRegionKpa
   const roofCoveringNormalized = input.roofCoveringType.toLowerCase()
@@ -762,7 +795,7 @@ function renderGeneralSpecificationOverview(
         </div>
         <div className="summary-metric-card">
           <span>Фермы</span>
-          <strong>{`${formatNumber(trussMassKg, 0)} кг / -`}</strong>
+          <strong>{`${formatNumber(trussMassKg, 0)} кг / ${formatRub(trussCostRub)} руб.`}</strong>
         </div>
         <div className="summary-metric-card">
           <span>Ограждающие ({enclosingClass.label})</span>
@@ -870,6 +903,10 @@ function renderGeneralSpecificationOverview(
         <div className="load-tile">
           <span>Сумма ферм, кг</span>
           <strong>{formatNumber(trussMassKg, 0)}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Стоимость ферм, руб.</span>
+          <strong>{formatRub(trussCostRub)}</strong>
         </div>
         <div className="load-tile">
           <span>Сумма ограждающих, кг</span>
@@ -1710,7 +1747,7 @@ export function ResultsPanel({
       ) : activeTab === 'methodology' ? (
         <MethodologyPanel input={input} purlinResult={purlinResult} columnResult={columnResult} />
       ) : activeTab === 'truss' ? (
-        renderTrussOverview(trussResult)
+        renderTrussOverview(trussResult, input.tubeS345PriceRubPerKg)
       ) : activeTab === 'purlin' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">
