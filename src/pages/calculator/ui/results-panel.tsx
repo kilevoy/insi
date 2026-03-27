@@ -572,6 +572,7 @@ function renderGeneralSpecificationOverview(
   selectedSortPurlinIndex: number,
   selectedLstkPurlinIndex: number,
   isColumnManualMode: boolean,
+  selectedEnclosingClassKey: EnclosingClassKey,
 ) {
   const { selectedCandidate, selectedCostRub } = resolvePurlinSpecificationState(
     purlinResult,
@@ -580,11 +581,27 @@ function renderGeneralSpecificationOverview(
     selectedSortPurlinIndex,
     selectedLstkPurlinIndex,
   )
+  const roofPurlinStepM =
+    selectedCandidate?.stepMm && selectedCandidate.stepMm > 0 ? selectedCandidate.stepMm / 1000 : 1.5
+  const enclosingInput = {
+    ...mapUnifiedInputToEnclosingInput(input),
+    roofPurlinStepM,
+  }
+  const enclosingResult = calculateEnclosing(enclosingInput)
+  const enclosingClass = enclosingResult.classes[selectedEnclosingClassKey]
+  const includeWalls = isSandwichPanelCovering(input.wallCoveringType)
+  const includeRoof = isSandwichPanelCovering(input.roofCoveringType)
+  const enclosingCostRub =
+    (includeWalls ? enclosingClass.walls.totals.sectionRub : 0) +
+    (includeRoof ? enclosingClass.roof.totals.sectionRub : 0)
+  const enclosingMassKg =
+    (includeWalls ? enclosingClass.walls.totals.panelMassKg : 0) +
+    (includeRoof ? enclosingClass.roof.totals.panelMassKg : 0)
 
   const combinedMassKg =
-    (columnResult?.specification.totalMassKg ?? 0) + (selectedCandidate?.totalMassKg ?? 0)
+    (columnResult?.specification.totalMassKg ?? 0) + (selectedCandidate?.totalMassKg ?? 0) + enclosingMassKg
   const combinedCostRub =
-    (columnResult?.specification.totalCostRub ?? 0) + (selectedCostRub ?? 0)
+    (columnResult?.specification.totalCostRub ?? 0) + (selectedCostRub ?? 0) + enclosingCostRub
   const combinedColumnsCount =
     columnResult?.specification.groups.reduce((sum, group) => sum + group.columnsCount, 0) ?? 0
   const selectedPurlinLabel = selectedCandidate
@@ -626,6 +643,10 @@ function renderGeneralSpecificationOverview(
         <div className="summary-metric-card">
           <span>Выбранный прогон</span>
           <strong>{selectedPurlinLabel}</strong>
+        </div>
+        <div className="summary-metric-card">
+          <span>Ограждающие ({enclosingClass.label})</span>
+          <strong>{`${formatRub(enclosingCostRub)} руб. / ${formatNumber(enclosingMassKg, 0)} кг`}</strong>
         </div>
       </div>
 
@@ -714,10 +735,18 @@ function renderGeneralSpecificationOverview(
           <span>Сумма прогонов, кг</span>
           <strong>{selectedCandidate ? formatNumber(selectedCandidate.totalMassKg, 0) : '-'}</strong>
         </div>
+        <div className="load-tile">
+          <span>Сумма ограждающих, кг</span>
+          <strong>{formatNumber(enclosingMassKg, 0)}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Сумма ограждающих, руб.</span>
+          <strong>{formatRub(enclosingCostRub)}</strong>
+        </div>
         <div className="load-tile load-tile--total">
           <span>Общая масса / стоимость</span>
           <strong>
-            {columnResult || selectedCandidate
+            {columnResult || selectedCandidate || enclosingCostRub > 0 || enclosingMassKg > 0
               ? `${formatNumber(combinedMassKg, 0)} кг / ${formatRub(combinedCostRub)} руб.`
               : '-'}
           </strong>
@@ -1314,6 +1343,7 @@ export function ResultsPanel({
             selectedSortPurlinIndex,
             selectedLstkPurlinIndex,
             isColumnManualMode,
+            enclosingClassKey,
           )}
           {renderColumnSpecification(columnResult)}
           {renderPurlinSpecification(
