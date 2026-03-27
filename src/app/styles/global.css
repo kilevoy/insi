@@ -1584,12 +1584,15 @@ textarea {
 
 .load-grid--summary .load-tile span {
   color: var(--soft-ink);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
 }
 
 .load-grid--summary .load-tile strong {
   color: var(--ink);
-  font-size: 0.96rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .load-grid--summary .load-tile--total {
