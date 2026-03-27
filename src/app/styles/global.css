@@ -94,6 +94,12 @@ textarea {
   gap: 14px;
 }
 
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 58px;
+}
+
 .brand-seal {
   display: grid;
   place-items: center;
@@ -1376,6 +1382,10 @@ textarea {
   height: 34px;
   border-radius: 6px;
   box-shadow: none;
+}
+
+.brand-logo {
+  height: 42px;
 }
 
 .brand-title {

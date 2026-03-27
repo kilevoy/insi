@@ -9,6 +9,7 @@ import {
 } from '@/domain/enclosing/model/enclosing-pricing-overrides'
 import { calculatePurlin, type PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
 import { calculateTruss, type TrussCalculationResult } from '@/domain/truss/model/calculate-truss'
+import insiLogoUrl from '@/assets/insi-logo.svg'
 import { useCalculatorStore } from '../model/calculator-store'
 import { mapToColumnInput, mapToPurlinInput, mapToTrussInput } from '../model/input-mapper'
 import type { UnifiedInputState } from '../model/unified-input'
@@ -264,8 +265,7 @@ export function CalculatorPage({ initialDomain, onBack }: CalculatorPageProps) {
         )}
 
         <div className="brand-mark" style={{ marginLeft: 16 }}>
-          <div className="brand-seal brand-seal--insi">INSI</div>
-          <strong className="brand-title">Предварительный расчет здания</strong>
+          <img className="brand-logo" src={insiLogoUrl} alt="ИНСИ" />
         </div>
 
         <div className="topbar-actions">
