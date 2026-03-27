@@ -655,7 +655,7 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
               <tr>
                 <th>Группа</th>
                 <th>Марка</th>
-                <th>Кол-во раскосов, шт.</th>
+                <th>Количество</th>
                 <th>К-т использования</th>
                 <th>Масса, кг</th>
                 <th>Стоимость, руб.</th>
