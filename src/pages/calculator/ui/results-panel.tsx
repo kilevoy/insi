@@ -655,9 +655,9 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
               <tr>
                 <th>Группа</th>
                 <th>Марка</th>
-                <th>Количество</th>
                 <th>К-т использования</th>
                 <th>Масса, кг</th>
+                <th>Количество</th>
                 <th>Стоимость, руб.</th>
                 <th>Проверка</th>
                 <th>Статус</th>
@@ -666,14 +666,22 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
             <tbody>
               {groups.map((group) => {
                 const braceCount = resolveBraceCountForGroup(group.key, trussResult.loadSummary.spanM)
+                const quantityLabel =
+                  group.key === 'vp'
+                    ? 'Верхний пояс'
+                    : group.key === 'np'
+                      ? 'Нижний пояс'
+                      : braceCount === null
+                        ? '—'
+                        : formatNumber(braceCount, 0)
 
                 return (
                   <tr key={group.key}>
                     <td>{group.label}</td>
                     <td>{group.profile ?? '—'}</td>
-                    <td>{braceCount === null ? '—' : formatNumber(braceCount, 0)}</td>
                     <td>{group.utilization === null ? '—' : formatNumber(group.utilization, 6)}</td>
-                    <td>{group.massKg === null ? '—' : formatNumber(group.massKg, 3)}</td>
+                    <td>{group.massKg === null ? '—' : formatNumber(group.massKg, 2)}</td>
+                    <td>{quantityLabel}</td>
                     <td>{group.massKg === null ? '—' : formatRub(group.massKg * tubeS345PriceRubPerKg)}</td>
                     <td>{group.criterion ?? '—'}</td>
                     <td>{group.status === 'ok' ? 'ОК' : 'Нет подходящего профиля'}</td>
@@ -690,7 +698,7 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
         <div className="summary-hero">
           <div className="summary-metric-card summary-metric-card--accent">
             <span>Масса фермы</span>
-            <strong>{trussResult.totalMassKg === null ? '—' : `${formatNumber(trussResult.totalMassKg, 3)} кг`}</strong>
+            <strong>{trussResult.totalMassKg === null ? '—' : `${formatNumber(trussResult.totalMassKg, 2)} кг`}</strong>
           </div>
           <div className="summary-metric-card">
             <span>Стоимость фермы</span>
