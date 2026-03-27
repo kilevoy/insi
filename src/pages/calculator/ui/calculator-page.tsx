@@ -9,7 +9,7 @@ import {
 } from '@/domain/enclosing/model/enclosing-pricing-overrides'
 import { calculatePurlin, type PurlinCalculationResult } from '@/domain/purlin/model/calculate-purlin'
 import { calculateTruss, type TrussCalculationResult } from '@/domain/truss/model/calculate-truss'
-import insiLogoUrl from '@/assets/insi-logo.svg'
+import insiLogoUrl from '@/assets/insi-logo.png'
 import { useCalculatorStore } from '../model/calculator-store'
 import { mapToColumnInput, mapToPurlinInput, mapToTrussInput } from '../model/input-mapper'
 import type { UnifiedInputState } from '../model/unified-input'

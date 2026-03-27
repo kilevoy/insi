@@ -86,6 +86,14 @@ function formatRub(value: number): string {
   return `${Math.round(value).toLocaleString('ru-RU')}`
 }
 
+function resolveTrussCount(buildingLengthM: number, frameStepM: number): number {
+  if (frameStepM <= 0 || buildingLengthM <= 0) {
+    return 0
+  }
+
+  return Math.max(1, Math.floor(buildingLengthM / frameStepM) + 1)
+}
+
 function isSandwichPanelCovering(covering: string): boolean {
   const normalized = covering.trim().toLowerCase()
   return (
@@ -567,7 +575,11 @@ function renderColumnSpecification(columnResult: ColumnCalculationResult | null)
   )
 }
 
-function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS345PriceRubPerKg: number) {
+function renderTrussOverview(
+  trussResult: TrussCalculationResult | null,
+  buildingLengthM: number,
+  tubeS345PriceRubPerKg: number,
+) {
   if (!trussResult) {
     return (
       <div className="tab-pane animate-in">
@@ -603,6 +615,9 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
 
   const groups = [trussResult.groups.vp, trussResult.groups.np, trussResult.groups.orb, trussResult.groups.or, trussResult.groups.rr]
   const hasMissingGroups = groups.some((group) => group.status !== 'ok')
+  const trussCount = resolveTrussCount(buildingLengthM, trussResult.loadSummary.frameStepM)
+  const trussTotalMassKg = trussResult.totalMassKg === null ? null : trussResult.totalMassKg * trussCount
+  const trussTotalCostRub = trussTotalMassKg === null ? null : trussTotalMassKg * tubeS345PriceRubPerKg
 
   return (
     <div className="tab-pane animate-in" data-testid="truss-panel">
@@ -696,6 +711,10 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
       <div className="results-section">
         <h3 className="results-section-title">Итог по ферме</h3>
         <div className="summary-hero">
+          <div className="summary-metric-card">
+            <span>Количество ферм</span>
+            <strong>{`${formatNumber(trussCount, 0)} шт.`}</strong>
+          </div>
           <div className="summary-metric-card summary-metric-card--accent">
             <span>Масса фермы</span>
             <strong>{trussResult.totalMassKg === null ? '—' : `${formatNumber(trussResult.totalMassKg, 2)} кг`}</strong>
@@ -714,6 +733,30 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null, tubeS34
                 : `${formatNumber(trussResult.specificMassKgPerM2, 6)} кг/м²`}
             </strong>
           </div>
+        </div>
+
+        <div className="table-container" style={{ marginTop: 12 }}>
+          <h4 className="results-section-title">Спецификация ферм</h4>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Количество, шт.</th>
+                <th>Масса 1 шт., кг</th>
+                <th>Масса итого, кг</th>
+                <th>Стоимость, руб.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Фермы</td>
+                <td>{formatNumber(trussCount, 0)}</td>
+                <td>{trussResult.totalMassKg === null ? '—' : formatNumber(trussResult.totalMassKg, 2)}</td>
+                <td>{trussTotalMassKg === null ? '—' : formatNumber(trussTotalMassKg, 2)}</td>
+                <td>{trussTotalCostRub === null ? '—' : formatRub(trussTotalCostRub)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
         {hasMissingGroups && (
@@ -765,7 +808,9 @@ function renderGeneralSpecificationOverview(
   const columnCostRub = columnResult?.specification.totalCostRub ?? 0
   const purlinMassKg = selectedCandidate?.totalMassKg ?? 0
   const purlinCostRub = selectedCostRub ?? 0
-  const trussMassKg = trussResult?.totalMassKg ?? 0
+  const trussCount = trussResult ? resolveTrussCount(input.buildingLengthM, trussResult.loadSummary.frameStepM) : 0
+  const trussUnitMassKg = trussResult?.totalMassKg ?? 0
+  const trussMassKg = trussUnitMassKg * trussCount
   const trussCostRub = trussMassKg * input.tubeS345PriceRubPerKg
 
   const combinedMassKg =
@@ -803,7 +848,7 @@ function renderGeneralSpecificationOverview(
         </div>
         <div className="summary-metric-card">
           <span>Фермы</span>
-          <strong>{`${formatNumber(trussMassKg, 0)} кг / ${formatRub(trussCostRub)} руб.`}</strong>
+          <strong>{`${formatNumber(trussCount, 0)} шт. / ${formatNumber(trussMassKg, 0)} кг / ${formatRub(trussCostRub)} руб.`}</strong>
         </div>
         <div className="summary-metric-card">
           <span>Ограждающие ({enclosingClass.label})</span>
@@ -907,6 +952,10 @@ function renderGeneralSpecificationOverview(
         <div className="load-tile">
           <span>Стоимость прогонов, руб.</span>
           <strong>{formatRub(purlinCostRub)}</strong>
+        </div>
+        <div className="load-tile">
+          <span>Количество ферм, шт.</span>
+          <strong>{formatNumber(trussCount, 0)}</strong>
         </div>
         <div className="load-tile">
           <span>Сумма ферм, кг</span>
@@ -1755,7 +1804,7 @@ export function ResultsPanel({
       ) : activeTab === 'methodology' ? (
         <MethodologyPanel input={input} purlinResult={purlinResult} columnResult={columnResult} />
       ) : activeTab === 'truss' ? (
-        renderTrussOverview(trussResult, input.tubeS345PriceRubPerKg)
+        renderTrussOverview(trussResult, input.buildingLengthM, input.tubeS345PriceRubPerKg)
       ) : activeTab === 'purlin' ? (
         <div className="tab-pane animate-in">
           <div className="results-section">
