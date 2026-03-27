@@ -405,36 +405,40 @@ export function UnifiedInputPanel({ input, onChange }: UnifiedInputPanelProps) {
 
       <section className="form-section">
         <h3 className="form-section-title">Настройка ферм</h3>
+        <p className="truss-settings-legend">
+          Обозначения: ВП — верхний пояс, НП — нижний пояс, ОРб — опорный раскос большой,
+          ОР — опорный раскос, РР — рядовой раскос.
+        </p>
 
         <div className="truss-settings-grid">
           <div className="truss-settings-block">
             <p className="truss-settings-subtitle">Минимальная толщина</p>
             <TrussSettingRow
-              code="ВП"
+              code="ВП — верхний пояс, мм"
               label="Минимальная толщина ВП, мм"
               value={input.trussMinThicknessVpMm}
               onValue={(value) => onChange('trussMinThicknessVpMm', value)}
             />
             <TrussSettingRow
-              code="НП"
+              code="НП — нижний пояс, мм"
               label="Минимальная толщина НП, мм"
               value={input.trussMinThicknessNpMm}
               onValue={(value) => onChange('trussMinThicknessNpMm', value)}
             />
             <TrussSettingRow
-              code="ОРб"
+              code="ОРб — опорный раскос большой, мм"
               label="Минимальная толщина ОРб, мм"
               value={input.trussMinThicknessOrbMm}
               onValue={(value) => onChange('trussMinThicknessOrbMm', value)}
             />
             <TrussSettingRow
-              code="ОР"
+              code="ОР — опорный раскос, мм"
               label="Минимальная толщина ОР, мм"
               value={input.trussMinThicknessOrMm}
               onValue={(value) => onChange('trussMinThicknessOrMm', value)}
             />
             <TrussSettingRow
-              code="РР"
+              code="РР — рядовой раскос, мм"
               label="Минимальная толщина РР, мм"
               value={input.trussMinThicknessRrMm}
               onValue={(value) => onChange('trussMinThicknessRrMm', value)}
@@ -444,13 +448,13 @@ export function UnifiedInputPanel({ input, onChange }: UnifiedInputPanelProps) {
           <div className="truss-settings-block">
             <p className="truss-settings-subtitle">Максимальная ширина</p>
             <TrussSettingRow
-              code="ВП"
+              code="ВП — верхний пояс, мм"
               label="Максимальная ширина ВП, мм"
               value={input.trussMaxWidthVpMm}
               onValue={(value) => onChange('trussMaxWidthVpMm', value)}
             />
             <TrussSettingRow
-              code="НП"
+              code="НП — нижний пояс, мм"
               label="Максимальная ширина НП, мм"
               value={input.trussMaxWidthNpMm}
               onValue={(value) => onChange('trussMaxWidthNpMm', value)}
@@ -460,19 +464,19 @@ export function UnifiedInputPanel({ input, onChange }: UnifiedInputPanelProps) {
           <div className="truss-settings-block">
             <p className="truss-settings-subtitle">Минимальная ширина</p>
             <TrussSettingRow
-              code="ОРб"
+              code="ОРб — опорный раскос большой, мм"
               label="Минимальная ширина ОРб, мм"
               value={input.trussMinWidthOrbMm}
               onValue={(value) => onChange('trussMinWidthOrbMm', value)}
             />
             <TrussSettingRow
-              code="ОР"
+              code="ОР — опорный раскос, мм"
               label="Минимальная ширина ОР, мм"
               value={input.trussMinWidthOrMm}
               onValue={(value) => onChange('trussMinWidthOrMm', value)}
             />
             <TrussSettingRow
-              code="РР"
+              code="РР — рядовой раскос, мм"
               label="Минимальная ширина РР, мм"
               value={input.trussMinWidthRrMm}
               onValue={(value) => onChange('trussMinWidthRrMm', value)}

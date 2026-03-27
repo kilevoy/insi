@@ -573,6 +573,10 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null) {
       <div className="tab-pane animate-in">
         <div className="results-section">
           <h3 className="results-section-title">Фермы</h3>
+          <p className="results-inline-note">
+            Обозначения: ВП — верхний пояс, НП — нижний пояс, ОРб — опорный раскос большой,
+            ОР — опорный раскос, РР — рядовой раскос.
+          </p>
           <div className="results-empty">Расчет ферм недоступен: требуется успешный расчет прогонов.</div>
         </div>
       </div>
@@ -586,6 +590,10 @@ function renderTrussOverview(trussResult: TrussCalculationResult | null) {
     <div className="tab-pane animate-in" data-testid="truss-panel">
       <div className="results-section">
         <h3 className="results-section-title">Фермы</h3>
+        <p className="results-inline-note">
+          Обозначения: ВП — верхний пояс, НП — нижний пояс, ОРб — опорный раскос большой,
+          ОР — опорный раскос, РР — рядовой раскос.
+        </p>
         <div className="load-grid">
           <div className="load-tile">
             <span>Пролет, м</span>

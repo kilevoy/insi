@@ -1470,6 +1470,13 @@ textarea {
   gap: 12px;
 }
 
+.truss-settings-legend {
+  margin: 0 0 10px;
+  color: var(--soft-ink);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .truss-settings-block {
   display: grid;
   gap: 8px;
@@ -1495,6 +1502,7 @@ textarea {
   color: #596470;
   font-size: 0.73rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .truss-settings-input {
